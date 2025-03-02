@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABG AI Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>Vivian AI</h2>
+        </div>
+        
+        <div class="avatar-main-container">
+            <div class="avatar-wrapper">
+                <img id="ai-avatar" src="assets/neutral.png" alt="ABG AI Avatar">
+                <div class="avatar-status">
+                    <span id="mood-text">Feeling neutral</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will appear here -->
+            <div class="ai-message">
+                <div class="avatar-small">
+                    <img src="assets/neutral.png" alt="AI">
+                </div>
+                <div class="message-content">
+                    <p>Hey bestie! I'm your ABG AI Chatbot~ What's up?</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here...">
+            <button id="send-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
