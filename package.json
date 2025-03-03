@@ -1,0 +1,17 @@
+{
+  "name": "abg-ai-chatbot",
+  "version": "1.0.0",
+  "description": "A simple, interactive chatbot with an ABG (Asian Baby Girl) personality built using vanilla JavaScript. The chatbot simulates conversations and changes its avatar based on the detected mood.",
+  "main": "api-config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.8.1",
+    "express": "^4.21.2"
+  }
+}

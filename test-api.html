@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugging Face API Test (Detailed)</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #results { background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Hugging Face API Test (Detailed)</h1>
+    <button id="testButton">Test API Connection</button>
+    <div id="results" style="margin-top: 20px;"></div>
+    
+    <script>
+        const API_KEY = "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";
+        const resultsDiv = document.getElementById('results');
+        
+        document.getElementById('testButton').addEventListener('click', async () => {
+            resultsDiv.textContent = "Testing API connection...\n";
+            resultsDiv.textContent += `API Key: ${API_KEY.substring(0, 4)}...\n\n`;
+            
+            try {
+                // Test model availability with text response to see what's happening
+                resultsDiv.textContent += "1. Testing model availability (with text response)...\n";
+                const modelResponse = await fetch("https://api-inference.huggingface.co/models/microsoft/GODEL-v1_1-base-seq2seq", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${API_KEY}`
+                    }
+                });
+                
+                resultsDiv.textContent += `Status: ${modelResponse.status} (${modelResponse.statusText})\n`;
+                
+                // Get the response as text to see what's actually being returned
+                const responseText = await modelResponse.text();
+                resultsDiv.textContent += `Response text (first 300 chars): ${responseText.substring(0, 300)}\n\n`;
+                
+                // Try a simpler model as a test
+                resultsDiv.textContent += "2. Testing with a simpler model (gpt2)...\n";
+                const simpleModelResponse = await fetch("https://api-inference.huggingface.co/models/gpt2", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${API_KEY}`
+                    }
+                });
+                
+                resultsDiv.textContent += `Status: ${simpleModelResponse.status} (${simpleModelResponse.statusText})\n`;
+                const simpleResponseText = await simpleModelResponse.text();
+                resultsDiv.textContent += `Response text (first 300 chars): ${simpleResponseText.substring(0, 300)}\n\n`;
+                
+                // Check current API status from Hugging Face
+                resultsDiv.textContent += "3. Checking if you're on the correct domain...\n";
+                resultsDiv.textContent += "Make sure you're using api-inference.huggingface.co\n\n";
+                
+                // Print browser details to help troubleshoot
+                resultsDiv.textContent += "4. Browser information:\n";
+                resultsDiv.textContent += `User Agent: ${navigator.userAgent}\n`;
+                resultsDiv.textContent += `Using HTTPS: ${window.location.protocol === 'https:'}\n\n`;
+                
+                resultsDiv.textContent += "5. Troubleshooting steps:\n";
+                resultsDiv.textContent += "- Try accessing https://huggingface.co/microsoft/GODEL-v1_1-base-seq2seq in your browser to check if you have access\n";
+                resultsDiv.textContent += "- Make sure your API key has the right permissions\n";
+                resultsDiv.textContent += "- Try creating a new API key\n";
+                resultsDiv.textContent += "- If using a VPN, try disabling it\n";
+                resultsDiv.textContent += "- Check if your network blocks API requests\n";
+                
+            } catch (error) {
+                resultsDiv.textContent += `❌ ERROR: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

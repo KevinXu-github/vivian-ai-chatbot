@@ -609,6 +609,7 @@ function updateMoodDisplay(mood) {
 }
 
 // Function to handle sending a message
+// Find the sendMessage function and modify it as follows:
 async function sendMessage() {
     const message = userInput.value.trim();
     
@@ -636,7 +637,6 @@ async function sendMessage() {
     }
     
     // IMPORTANT: Determine mood BEFORE adding the user message
-    // This ensures the mood is updated before any UI elements are created
     const newMood = determineMood(message);
     console.log(`Message: "${message}" detected mood: ${newMood}`);
     
@@ -658,11 +658,11 @@ async function sendMessage() {
     // Add a delay to simulate thinking
     const thinkingTime = 1000 + Math.random() * 1000; // 1-2 seconds
     
-    setTimeout(() => {
+    setTimeout(async () => {
         // Remove typing indicator
         removeTypingIndicator();
         
-        // Try to get a trained response first
+        // Step 1: Try to get a trained response first
         if (typeof getTrainedResponse === 'function') {
             const trainedResponse = getTrainedResponse(
                 message, 
@@ -676,7 +676,25 @@ async function sendMessage() {
             }
         }
         
-        // Fall back to template responses
+        // Step 2: If no trained response, try GODEL
+        if (typeof getCachedOrFreshResponse === 'function') {
+            try {
+                const godelResponse = await getCachedOrFreshResponse(
+                    message,
+                    chatbotState.settings.personality,
+                    chatbotState.mood
+                );
+                
+                if (godelResponse) {
+                    addMessage(godelResponse, false);
+                    return;
+                }
+            } catch (error) {
+                console.error("Error with GODEL response:", error);
+            }
+        }
+        
+        // Step 3: Fall back to template responses if all else fails
         const templateResponse = getAIResponse(message);
         addMessage(templateResponse);
         
