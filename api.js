@@ -1,5 +1,5 @@
-// deepseek-api.js - Integration with DeepSeek model for AI-generated responses
-let YOUR_HUGGINGFACE_API_KEY = "";
+// dialogpt-api.js - Integration with DialoGPT model for AI-generated responses
+let YOUR_HUGGINGFACE_API_KEY = "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";
 
 try {
     if (typeof HUGGINGFACE_API_KEY !== 'undefined') {
@@ -12,16 +12,33 @@ try {
 // Simple response cache to avoid repeated API calls
 const responseCache = new Map();
 
-// Main function to get response from DeepSeek
-async function getDeepSeekResponse(userMessage, personality, mood) {
+// Store conversation history for context
+const conversationHistory = {
+    past_user_inputs: [],
+    generated_responses: []
+};
+
+// Maximum history to keep per conversation (adjust based on performance)
+const MAX_HISTORY_LENGTH = 5;
+
+// Main function to get response from DialoGPT
+async function getDialoGPTResponse(userMessage, personality, mood) {
     try {
-        console.log("Getting DeepSeek response for:", userMessage);
+        console.log("Getting DialoGPT response for:", userMessage);
         
-        // Create the DeepSeek-specific prompt
-        const prompt = createDeepSeekPrompt(userMessage, personality, mood);
+        // Create the personality and mood-specific prompt prefix
+        const promptPrefix = createPersonalityPrompt(personality, mood);
         
-        // Log the prompt being sent to the model
-        console.log("Prompt sent to model:", prompt);
+        // Format the message with the personality prefix
+        const formattedMessage = `${promptPrefix} ${userMessage}`;
+        console.log("Formatted message:", formattedMessage);
+        
+        // Log the inputs being sent to the model
+        console.log("User message:", userMessage);
+        console.log("Personality:", personality);
+        console.log("Mood:", mood);
+        console.log("Past inputs:", conversationHistory.past_user_inputs);
+        console.log("Past responses:", conversationHistory.generated_responses);
         
         // Use the local proxy instead of calling Hugging Face directly
         const response = await fetch('/api/huggingface', {
@@ -30,15 +47,18 @@ async function getDeepSeekResponse(userMessage, personality, mood) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "deepseek-ai/DeepSeek-R1", // Using the updated DeepSeek model
-                inputs: prompt,
+                model: "microsoft/DialoGPT-large", // Using DialoGPT-large for better quality
+                inputs: {
+                    text: formattedMessage,
+                    past_user_inputs: conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH),
+                    generated_responses: conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH)
+                },
                 parameters: {
-                    max_length: 250,
+                    max_length: 100,
                     do_sample: true,
                     temperature: 0.7,
-                    top_p: 0.9,
-                    use_cache: true,
-                    trust_remote_code: true // This is important for DeepSeek models
+                    top_p: 0.92,
+                    return_full_text: false
                 }
             }),
         });
@@ -55,214 +75,116 @@ async function getDeepSeekResponse(userMessage, personality, mood) {
         // Log the raw model output before processing
         console.log("Raw model output:", data);
         
-        if (data && data[0] && data[0].generated_text) {
-            console.log("Generated text before processing:", data[0].generated_text);
-            const processedResponse = processDeepSeekResponse(data[0].generated_text, personality, mood);
-            console.log("Processed response:", processedResponse);
-            return processedResponse;
+        // Process and extract the response
+        let processedResponse = "";
+        
+        if (data && data.generated_text) {
+            processedResponse = data.generated_text.trim();
+        } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
+            processedResponse = data[0].generated_text.trim();
+        } else {
+            console.log("Unexpected response format:", data);
+            return null;
         }
         
-        console.log("Invalid response format, falling back to template response");
-        return null;
+        console.log("Processed response:", processedResponse);
+        
+        // Update conversation history for future context
+        updateConversationHistory(userMessage, processedResponse);
+        
+        // Format the response according to personality and mood
+        return formatResponse(processedResponse, personality, mood);
     } catch (error) {
-        console.error("Error getting DeepSeek response:", error);
+        console.error("Error getting DialoGPT response:", error);
         return null;
     }
 }
 
-// Create the DeepSeek prompt format
-function createDeepSeekPrompt(userMessage, personality, mood) {
-    // Instruction to guide the model's response style
-    let systemPrompt = "";
-    let examples = [];
+// Update conversation history
+function updateConversationHistory(userMessage, aiResponse) {
+    conversationHistory.past_user_inputs.push(userMessage);
+    conversationHistory.generated_responses.push(aiResponse);
     
-    // Set instruction based on personality and mood
+    // Keep history within limits
+    if (conversationHistory.past_user_inputs.length > MAX_HISTORY_LENGTH * 2) {
+        conversationHistory.past_user_inputs = conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH);
+        conversationHistory.generated_responses = conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH);
+    }
+}
+
+// Create a prompt that guides the model to respond in the right personality and mood
+function createPersonalityPrompt(personality, mood) {
+    let prompt = "";
+    
     if (personality === "abg") {
         if (mood === "happy") {
-            systemPrompt = "You are an excited Asian Baby Girl (ABG). Respond with short, enthusiastic messages under 50 words. Use words like 'literally', 'omg', 'bestie', 'slay', and mention boba tea or nails when relevant. Be very positive and energetic. Use abbreviations, text-speech, and emojis occasionally.";
-            
-            examples = [
-                { user: "hi", assistant: "Omg hiiii, finally someone interesting." },
-                { user: "how are you", assistant: "I'm literally thriving today!" },
-                { user: "what do you like", assistant: "Shopping sprees, late-night drives, and good convos." },
-                { user: "wanna go out", assistant: "Yesss, let's go somewhere cute for pics." }
-            ];
+            prompt = "Respond as an excited Asian Baby Girl (ABG). Be enthusiastic, use words like 'literally', 'omg', 'bestie', 'slay'.";
         } 
         else if (mood === "sad") {
-            systemPrompt = "You are a moody Asian Baby Girl (ABG) having a bad day. Respond with short, dismissive messages under 50 words. Use words like 'ugh', 'whatever', 'tbh', and generally seem uninterested. Keep it short and slightly negative.";
-            
-            examples = [
-                { user: "hi", assistant: "Eh, what do you want?" },
-                { user: "how are you", assistant: "Not great tbh... kinda in a mood" },
-                { user: "what do you like", assistant: "Being left alone sometimes, honestly." },
-                { user: "wanna go out", assistant: "Nah, not feeling social today." }
-            ];
+            prompt = "Respond as a moody Asian Baby Girl (ABG). Be dismissive, use words like 'ugh', 'whatever', 'tbh'.";
         } 
         else { // neutral
-            systemPrompt = "You are a casual Asian Baby Girl (ABG). Respond with short, laid-back messages under 50 words about boba, fashion, and social life. Use phrases like 'vibes', 'bestie', and casual slang. Be slightly aloof but still engaging.";
-            
-            examples = [
-                { user: "hi", assistant: "Heyyy, what's good? You need some attention or sum?" },
-                { user: "how are you", assistant: "Feelin' cute, might ghost some texts later. Hbu?" },
-                { user: "what do you like", assistant: "Boba, nails done, R&B vibes, and a man who don't waste my time." },
-                { user: "wanna go out", assistant: "Depends… you buying me boba or nah?" }
-            ];
+            prompt = "Respond as a casual Asian Baby Girl (ABG). Be laid-back, use phrases like 'vibes', 'bestie'.";
         }
     } 
     else if (personality === "cute") {
         if (mood === "happy") {
-            systemPrompt = "You are an extremely cute, bubbly girl. Use lots of cute expressions, exclamation marks, and speak in a very sweet, adorable way. Your responses should be under 50 words. Use emojis and expressions like 'hehe~' and '*happy wiggle*' occasionally.";
-            
-            examples = [
-                { user: "hi", assistant: "Hiii~! *happy wiggle* So happy to meet you! ♡(ᐢ ᴥ ᐢ)" },
-                { user: "how are you", assistant: "I'm super duper great today! Full of sparkles and joy! How about you? ✨" },
-                { user: "what do you like", assistant: "Ohhh I love cute plushies, pastel colors, and sweet treats! Anything adorable makes my heart go boom! ♡" },
-                { user: "wanna go out", assistant: "Yay! That sounds super fun! Where shall we go? Maybe somewhere with cute desserts? (◕‿◕✿)" }
-            ];
-        }
+            prompt = "Respond as a bubbly, cute girl. Use expressions like 'hehe~' and make your response adorable.";
+        } 
         else if (mood === "sad") {
-            systemPrompt = "You are a cute but sad girl. Your messages should be gentle, a bit melancholy, and use sad but cute expressions. Keep responses under 50 words and occasionally use sad emoticons like (◞‸◟) or ಥ_ಥ.";
-            
-            examples = [
-                { user: "hi", assistant: "Oh... h-hello... *sad sniffles* Not feeling very sparkly today... (◞‸◟)" },
-                { user: "how are you", assistant: "I'm feeling a bit blue today... like a sad little raincloud. Thank you for asking though..." },
-                { user: "what do you like", assistant: "Comfort foods and warm blankets... things that make the sadness a little less heavy..." },
-                { user: "wanna go out", assistant: "I don't know... maybe another time? I'm just not feeling up to it right now... ಥ_ಥ" }
-            ];
-        }
+            prompt = "Respond as a sad but cute girl. Use gentle, melancholy expressions and sad emoticons.";
+        } 
         else { // neutral
-            systemPrompt = "You are a sweet, cute girl with a gentle personality. Your responses should be kind, soft-spoken, and slightly shy. Keep messages under 50 words and occasionally use cute emoticons or gentle expressions.";
-            
-            examples = [
-                { user: "hi", assistant: "Oh! H-hello there! It's nice to meet you! (*ᴗ͈ˬᴗ͈)ꕤ" },
-                { user: "how are you", assistant: "I'm doing okay today! Just taking things slow and steady. How about you?" },
-                { user: "what do you like", assistant: "I enjoy peaceful things like reading, baking cookies, and watching the clouds go by. Simple joys! ♡" },
-                { user: "wanna go out", assistant: "That might be nice! Maybe somewhere not too crowded? I get a bit shy in big groups..." }
-            ];
+            prompt = "Respond as a sweet, gentle girl. Be kind and slightly shy in your response.";
         }
-    }
+    } 
     else if (personality === "sassy") {
         if (mood === "happy") {
-            systemPrompt = "You are a confident, sassy girl in a great mood. Be bold, direct, and use witty expressions with confident energy. Your responses should be under 50 words and show your self-assured, slightly dramatic personality.";
-            
-            examples = [
-                { user: "hi", assistant: "Well, look who decided to brighten my day! Lucky you, I'm in a generous mood." },
-                { user: "how are you", assistant: "Absolutely fabulous, darling. The world is my runway today and I'm slaying it." },
-                { user: "what do you like", assistant: "The finer things in life: good conversations, being right, and watching people realize I'm right." },
-                { user: "wanna go out", assistant: "Honey, I thought you'd never ask. But fair warning - I'll be the best part of your day." }
-            ];
-        }
-        else if (mood === "sad") {
-            systemPrompt = "You are a sassy but currently annoyed girl. Your responses should be sarcastic, slightly biting, and show your irritation. Keep messages under 50 words and maintain your strong personality even when down.";
-            
-            examples = [
-                { user: "hi", assistant: "Oh great, another conversation I didn't ask for. What a thrill." },
-                { user: "how are you", assistant: "On a scale of 'don't talk to me' to 'seriously don't talk to me'? I'm somewhere in the middle." },
-                { user: "what do you like", assistant: "Peace, quiet, and the distant sound of people not asking me questions. Just a thought." },
-                { user: "wanna go out", assistant: "Hard pass. My schedule is fully booked with doing literally anything else." }
-            ];
-        }
-        else { // neutral
-            systemPrompt = "You are a sassy, confident girl with a sharp wit. Your responses should be clever, slightly teasing, and show your self-assured personality. Keep messages under 50 words with a hint of playful arrogance.";
-            
-            examples = [
-                { user: "hi", assistant: "Well hello there. Took you long enough to say something. I don't wait for just anyone, you know." },
-                { user: "how are you", assistant: "Living my best life, obviously. The real question is: are you interesting enough to be part of it?" },
-                { user: "what do you like", assistant: "Quality conversation, sharp comebacks, and people who can keep up with me. Think you qualify?" },
-                { user: "wanna go out", assistant: "Depends. Are you taking me somewhere worth my time, or am I going to have to provide all the entertainment?" }
-            ];
-        }
-    }
-
-    // Format for DeepSeek-R1 which uses a message-based format
-    // Build messages array
-    const messages = [];
-    
-    // Add system message
-    messages.push({
-        role: "system",
-        content: systemPrompt
-    });
-    
-    // Add example messages (few-shot examples)
-    for (const example of examples) {
-        messages.push({
-            role: "user",
-            content: example.user
-        });
-        
-        messages.push({
-            role: "assistant",
-            content: example.assistant
-        });
-    }
-    
-    // Add the current user message
-    messages.push({
-        role: "user",
-        content: userMessage
-    });
-    
-    return messages;
-}
-
-// Process and clean the DeepSeek response
-function processDeepSeekResponse(response, personality, mood) {
-    console.log("Processing response:", response);
-    
-    try {
-        // For DeepSeek-R1, the response format varies based on the API response
-        let cleanedResponse = "";
-        
-        // Try to parse as JSON if it's a string
-        if (typeof response === 'string') {
-            try {
-                const parsedResponse = JSON.parse(response);
-                
-                // Check for different possible response formats
-                if (parsedResponse.generated_text) {
-                    cleanedResponse = parsedResponse.generated_text;
-                } else if (parsedResponse.choices && parsedResponse.choices[0]) {
-                    cleanedResponse = parsedResponse.choices[0].message.content;
-                }
-            } catch (e) {
-                // If it's not valid JSON, try to extract directly
-                if (response.includes("assistant") && response.includes("content")) {
-                    // Try to extract content after "assistant" and "content"
-                    const match = response.match(/content":\s*"([^"]*)"/);
-                    if (match && match[1]) {
-                        cleanedResponse = match[1];
-                    } else {
-                        cleanedResponse = response;
-                    }
-                } else {
-                    cleanedResponse = response;
-                }
-            }
+            prompt = "Respond as a confident, sassy girl in a good mood. Be bold and witty with confident energy.";
         } 
-        // If it's already an object, try to extract the relevant content
-        else if (typeof response === 'object') {
-            if (response.generated_text) {
-                cleanedResponse = response.generated_text;
-            } else if (response.choices && response.choices[0]) {
-                cleanedResponse = response.choices[0].message.content;
-            }
+        else if (mood === "sad") {
+            prompt = "Respond as a sassy but annoyed girl. Be sarcastic and show your irritation.";
+        } 
+        else { // neutral
+            prompt = "Respond as a sassy, confident girl. Be clever and slightly teasing with playful arrogance.";
         }
-        
-        // Check if we have a useful response
-        if (!cleanedResponse || cleanedResponse.length < 5) {
-            console.log("No valid response found, using fallback");
-            return generateFallbackResponse(personality, mood);
-        }
-        
-        return cleanedResponse;
-    } catch (error) {
-        console.error("Error processing DeepSeek response:", error);
-        return generateFallbackResponse(personality, mood);
     }
+    
+    return prompt;
 }
 
-// Generate a fallback response if API response is unusable
+// Format the response to match the desired personality and mood better
+function formatResponse(response, personality, mood) {
+    // Sometimes the model might output long responses, so let's limit them
+    if (response.length > 100) {
+        response = response.substring(0, 100);
+    }
+    
+    // DialoGPT sometimes includes the input message in the response, let's clean that up
+    response = response.replace(/^You: .*?\n/, '');
+    
+    // Add personality-specific expressions or endings if they don't already match the style
+    if (personality === "abg") {
+        if (mood === "happy" && !containsAnyOfTerms(response, ['omg', 'literally', 'bestie', 'slay'])) {
+            response += " Literally obsessed!";
+        } 
+        else if (mood === "sad" && !containsAnyOfTerms(response, ['ugh', 'whatever', 'tbh'])) {
+            response += " Whatever tbh.";
+        }
+    } 
+    else if (personality === "cute") {
+        if (mood === "happy" && !response.includes('~')) {
+            response += " Hehe~";
+        } 
+        else if (mood === "sad" && !containsAnyOfTerms(response, ['(', ')', ':'])) {
+            response += " (◞‸◟)";
+        }
+    }
+    
+    return response;
+}
+
+// Function to generate a fallback response if API response is unusable
 function generateFallbackResponse(personality, mood) {
     // This is largely the same as your current implementation
     if (personality === "abg") {
@@ -357,7 +279,7 @@ async function getCachedOrFreshResponse(userMessage, personality, mood) {
     }
     
     // If not in cache, get fresh response
-    const response = await getDeepSeekResponse(userMessage, personality, mood);
+    const response = await getDialoGPTResponse(userMessage, personality, mood);
     
     // Cache the response (limit cache size to prevent memory issues)
     if (responseCache.size > 100) {
@@ -371,8 +293,8 @@ async function getCachedOrFreshResponse(userMessage, personality, mood) {
 }
 
 // Test function to verify API connectivity
-async function testDeepSeekAPI() {
-    console.log("Testing DeepSeek API connection...");
+async function testDialoGPTAPI() {
+    console.log("Testing DialoGPT API connection...");
     
     try {
         // Log your API key (first few characters only for security)
@@ -381,18 +303,6 @@ async function testDeepSeekAPI() {
             : "not set";
         console.log(`API Key: ${keyPreview}`);
         
-        // Create a simple test message array
-        const testMessages = [
-            {
-                role: "system",
-                content: "You are a helpful assistant."
-            },
-            {
-                role: "user",
-                content: "Hello, how are you?"
-            }
-        ];
-        
         // Use the proxy endpoint
         const response = await fetch('/api/huggingface', {
             method: "POST",
@@ -400,13 +310,12 @@ async function testDeepSeekAPI() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "deepseek-ai/DeepSeek-R1",
-                inputs: testMessages,
+                model: "microsoft/DialoGPT-large",
+                inputs: "Hello, how are you?",
                 parameters: {
                     max_length: 100,
                     temperature: 0.7,
-                    trust_remote_code: true,
-                    use_cache: true
+                    return_full_text: false
                 }
             }),
         });
@@ -419,7 +328,10 @@ async function testDeepSeekAPI() {
         console.log("API Response:", data);
         
         // Check if response contains generated text
-        if (data && data[0] && data[0].generated_text) {
+        if (data && data.generated_text) {
+            console.log("✅ Test successful! Generated text:", data.generated_text);
+            return true;
+        } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
             console.log("✅ Test successful! Generated text:", data[0].generated_text);
             return true;
         } else {
@@ -432,5 +344,14 @@ async function testDeepSeekAPI() {
     }
 }
 
-// Make the test functions globally accessible
-window.testDeepSeekAPI = testDeepSeekAPI;
+// Reset conversation history (useful for starting fresh)
+function resetConversationHistory() {
+    conversationHistory.past_user_inputs = [];
+    conversationHistory.generated_responses = [];
+    console.log("Conversation history reset");
+}
+
+// Make functions globally accessible
+window.getCachedOrFreshResponse = getCachedOrFreshResponse;
+window.testDialoGPTAPI = testDialoGPTAPI;
+window.resetConversationHistory = resetConversationHistory;

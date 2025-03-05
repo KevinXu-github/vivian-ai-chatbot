@@ -296,6 +296,15 @@ const personalityResponses = {
     }
 };
 
+// Store conversation history for context
+const conversationHistory = {
+    past_user_inputs: [],
+    generated_responses: []
+};
+
+// Maximum history to keep per conversation
+const MAX_HISTORY_LENGTH = 5;
+
 // Get current personality responses
 function getCurrentResponses() {
     return personalityResponses[chatbotState.settings.personality];
@@ -479,6 +488,9 @@ function clearChatHistory() {
     // Reset mood to neutral
     chatbotState.mood = 'neutral';
     updateMoodDisplay('neutral');
+    
+    // Reset conversation history for DialoGPT
+    resetConversationHistory();
 }
 
 // Function to save settings
@@ -621,6 +633,321 @@ function addMessage(text, isUser = false) {
     
     // Scroll to bottom of chat
     chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // Update conversation history for DialoGPT if not a user message
+    if (!isUser) {
+        updateConversationHistory(text, null);
+    }
+}
+
+// Update conversation history for DialoGPT
+function updateConversationHistory(aiResponse, userMessage) {
+    if (userMessage) {
+        conversationHistory.past_user_inputs.push(userMessage);
+    }
+    if (aiResponse) {
+        conversationHistory.generated_responses.push(aiResponse);
+    }
+    
+    // Keep history within limits
+    if (conversationHistory.past_user_inputs.length > MAX_HISTORY_LENGTH) {
+        conversationHistory.past_user_inputs = conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH);
+        conversationHistory.generated_responses = conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH);
+    }
+}
+
+// Reset conversation history for DialoGPT
+function resetConversationHistory() {
+    conversationHistory.past_user_inputs = [];
+    conversationHistory.generated_responses = [];
+    console.log("Conversation history reset");
+}
+
+// Get DialoGPT response
+// Get DialoGPT response
+async function getDialoGPTResponse(userMessage, personality, mood) {
+    try {
+        console.log("Getting DialoGPT response for:", userMessage);
+        
+        // Create the personality and mood-specific prompt prefix
+        const promptPrefix = createPersonalityPrompt(personality, mood);
+        
+        // Format the message but don't include the prompt in what gets sent to the user
+        const formattedMessage = `${userMessage}`;
+        console.log("Using personality prompt:", promptPrefix);
+        
+        // Use the proxy endpoint
+        const response = await fetch('/api/huggingface', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "microsoft/DialoGPT-medium", // Try medium - more reliable
+                inputs: formattedMessage, // Just send the user message
+                parameters: {
+                    max_length: 100,
+                    do_sample: true,
+                    temperature: 0.7,
+                    top_p: 0.92,
+                    return_full_text: false
+                }
+            }),
+        });
+        
+        // Check for error response
+        if (!response.ok) {
+            console.log(`API error (${response.status}), falling back to template response`);
+            return null;
+        }
+        
+        console.log("Response status:", response.status);
+        const data = await response.json();
+        
+        // Log the raw model output before processing
+        console.log("Raw model output:", data);
+        
+        // Process and extract the response
+        let processedResponse = "";
+        
+        if (data && data.generated_text) {
+            processedResponse = data.generated_text.trim();
+        } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
+            processedResponse = data[0].generated_text.trim();
+        } else {
+            console.log("Unexpected response format:", data);
+            return null;
+        }
+        
+        console.log("Processed response:", processedResponse);
+        
+        // Now apply the personality and mood - post-process the model's response
+        let styledResponse = applyPersonalityStyle(processedResponse, personality, mood);
+        
+        // Update conversation history
+        updateConversationHistory(styledResponse, userMessage);
+        
+        return styledResponse;
+    } catch (error) {
+        console.error("Error getting DialoGPT response:", error);
+        return null;
+    }
+}
+
+// Apply personality and mood to a generic response
+function applyPersonalityStyle(response, personality, mood) {
+    // Make sure we have something to work with
+    if (!response || response.trim().length === 0) {
+        response = "I see";
+    }
+    
+    // Start with the base response
+    let styledResponse = response;
+    
+    // Add ABG slang and phrases based on personality and mood
+    if (personality === "abg") {
+        if (mood === "happy") {
+            // Add ABG happy style phrases/slang
+            const happyPhrases = [
+                "Omg literally ",
+                "Yesss bestie! ",
+                "I'm so obsessed with ",
+                "That's such a slay! ",
+                "Periodt! ",
+                "I'm literally living for "
+            ];
+            
+            // Add ABG happy endings
+            const happyEndings = [
+                " No cap!",
+                " Literally obsessed!",
+                " So good!",
+                " Main character energy!",
+                " Vibes are immaculate!",
+                " You're such a vibe!"
+            ];
+            
+            // Randomly decide if we replace the start, end, or both
+            const styleChoice = Math.floor(Math.random() * 3);
+            
+            if (styleChoice === 0 || styleChoice === 2) {
+                // Replace start
+                const randomStart = happyPhrases[Math.floor(Math.random() * happyPhrases.length)];
+                styledResponse = randomStart + styledResponse.toLowerCase();
+            }
+            
+            if (styleChoice === 1 || styleChoice === 2) {
+                // Add ending
+                const randomEnd = happyEndings[Math.floor(Math.random() * happyEndings.length)];
+                styledResponse = styledResponse + randomEnd;
+            }
+        }
+        else if (mood === "sad") {
+            // Add ABG sad style phrases
+            const sadPhrases = [
+                "Ugh, ",
+                "Whatever, ",
+                "Tbh ",
+                "I'm not vibing with ",
+                "I can't even with "
+            ];
+            
+            // Add ABG sad endings
+            const sadEndings = [
+                " Whatever.",
+                " Tbh.",
+                " Not the vibe.",
+                " It's giving sad girl hours.",
+                " Literally over it."
+            ];
+            
+            // Randomly decide if we replace the start, end, or both
+            const styleChoice = Math.floor(Math.random() * 3);
+            
+            if (styleChoice === 0 || styleChoice === 2) {
+                // Replace start
+                const randomStart = sadPhrases[Math.floor(Math.random() * sadPhrases.length)];
+                styledResponse = randomStart + styledResponse.toLowerCase();
+            }
+            
+            if (styleChoice === 1 || styleChoice === 2) {
+                // Add ending
+                const randomEnd = sadEndings[Math.floor(Math.random() * sadEndings.length)];
+                styledResponse = styledResponse + randomEnd;
+            }
+        }
+        else { // neutral
+            // Add ABG neutral style phrases
+            const neutralPhrases = [
+                "Hmm, ",
+                "Bestie, ",
+                "So like, ",
+                "Lowkey, ",
+                "I mean, "
+            ];
+            
+            // Add ABG neutral endings
+            const neutralEndings = [
+                " Just vibing.",
+                " That's the tea.",
+                " Boba tea and chill?",
+                " You feel me?",
+                " It's giving neutral vibes."
+            ];
+            
+            // Randomly decide if we replace the start, end, or both
+            const styleChoice = Math.floor(Math.random() * 3);
+            
+            if (styleChoice === 0 || styleChoice === 2) {
+                // Replace start
+                const randomStart = neutralPhrases[Math.floor(Math.random() * neutralPhrases.length)];
+                styledResponse = randomStart + styledResponse.toLowerCase();
+            }
+            
+            if (styleChoice === 1 || styleChoice === 2) {
+                // Add ending
+                const randomEnd = neutralEndings[Math.floor(Math.random() * neutralEndings.length)];
+                styledResponse = styledResponse + randomEnd;
+            }
+        }
+    }
+    else if (personality === "cute") {
+        // Similar structure for cute personality...
+        // (add cute personality styling code here)
+    }
+    else if (personality === "sassy") {
+        // Similar structure for sassy personality...
+        // (add sassy personality styling code here)
+    }
+    
+    return styledResponse;
+}
+
+// Create a prompt that guides the model to respond in the right personality and mood
+function createPersonalityPrompt(personality, mood) {
+    let prompt = "";
+    
+    if (personality === "abg") {
+        if (mood === "happy") {
+            prompt = "Respond as an excited Asian Baby Girl (ABG). Be enthusiastic, use words like 'literally', 'omg', 'bestie', 'slay'.";
+        } 
+        else if (mood === "sad") {
+            prompt = "Respond as a moody Asian Baby Girl (ABG). Be dismissive, use words like 'ugh', 'whatever', 'tbh'.";
+        } 
+        else { // neutral
+            prompt = "Respond as a casual Asian Baby Girl (ABG). Be laid-back, use phrases like 'vibes', 'bestie'.";
+        }
+    } 
+    else if (personality === "cute") {
+        if (mood === "happy") {
+            prompt = "Respond as a bubbly, cute girl. Use expressions like 'hehe~' and make your response adorable.";
+        } 
+        else if (mood === "sad") {
+            prompt = "Respond as a sad but cute girl. Use gentle, melancholy expressions and sad emoticons.";
+        } 
+        else { // neutral
+            prompt = "Respond as a sweet, gentle girl. Be kind and slightly shy in your response.";
+        }
+    } 
+    else if (personality === "sassy") {
+        if (mood === "happy") {
+            prompt = "Respond as a confident, sassy girl in a good mood. Be bold and witty with confident energy.";
+        } 
+        else if (mood === "sad") {
+            prompt = "Respond as a sassy but annoyed girl. Be sarcastic and show your irritation.";
+        } 
+        else { // neutral
+            prompt = "Respond as a sassy, confident girl. Be clever and slightly teasing with playful arrogance.";
+        }
+    }
+    
+    return prompt;
+}
+
+// Format the response to match the desired personality and mood better
+function formatResponse(response, personality, mood) {
+    // Sometimes the model might output long responses, so let's limit them
+    if (response.length > 100) {
+        response = response.substring(0, 100);
+    }
+    
+    // DialoGPT sometimes includes the input message in the response, let's clean that up
+    response = response.replace(/^You: .*?\n/, '');
+    
+    // Add personality-specific expressions or endings if they don't already match the style
+    if (personality === "abg") {
+        if (mood === "happy" && !containsAnyOfTerms(response, ['omg', 'literally', 'bestie', 'slay'])) {
+            response += " Literally obsessed!";
+        } 
+        else if (mood === "sad" && !containsAnyOfTerms(response, ['ugh', 'whatever', 'tbh'])) {
+            response += " Whatever tbh.";
+        }
+    } 
+    else if (personality === "cute") {
+        if (mood === "happy" && !response.includes('~')) {
+            response += " Hehe~";
+        } 
+        else if (mood === "sad" && !containsAnyOfTerms(response, ['(', ')', ':'])) {
+            response += " (◞‸◟)";
+        }
+    }
+    
+    return response;
+}
+
+// Helper function to check if response contains any of the specified terms
+function containsAnyOfTerms(text, terms) {
+    return terms.some(term => text.toLowerCase().includes(term.toLowerCase()));
+}
+
+// Get cached response or fetch new one
+async function getCachedOrFreshResponse(userMessage, personality, mood) {
+    try {
+        return await getDialoGPTResponse(userMessage, personality, mood);
+    } catch (error) {
+        console.error('Error getting DialoGPT response:', error);
+        return null;
+    }
 }
 
 // Settings Panel Functions
@@ -740,7 +1067,6 @@ function updateMoodDisplay(mood) {
     avatarMainContainer.classList.add(`mood-${mood}`);
 }
 
-
 // Function to handle sending a message
 async function sendMessage() {
     const message = userInput.value.trim();
@@ -794,17 +1120,21 @@ async function sendMessage() {
         // Remove typing indicator
         removeTypingIndicator();
         
-        // PRIORITY CHANGED: First try to get a DeepSeek response
+        // Get DialoGPT response
         try {
             if (typeof getCachedOrFreshResponse === 'function') {
-                const deepSeekResponse = await getCachedOrFreshResponse(
+                const aiResponse = await getCachedOrFreshResponse(
                     message,
                     chatbotState.settings.personality,
                     chatbotState.mood
                 );
                 
-                if (deepSeekResponse) {
-                    addMessage(deepSeekResponse, false);
+                if (aiResponse) {
+                    // Update conversation history with user message
+                    updateConversationHistory(null, message);
+                    
+                    // Add AI response to chat
+                    addMessage(aiResponse, false);
                     
                     // Update last response time
                     chatbotState.lastResponseTime = Date.now();
@@ -812,10 +1142,10 @@ async function sendMessage() {
                 }
             }
         } catch (error) {
-            console.error("Error with DeepSeek response:", error);
+            console.error("Error with DialoGPT response:", error);
         }
         
-        // If DeepSeek fails, fall back to trained responses
+        // If DialoGPT fails, fall back to trained responses
         if (typeof getTrainedResponse === 'function') {
             const trainedResponse = getTrainedResponse(
                 message, 
@@ -917,3 +1247,4 @@ function fixTrainingMoodAssociations() {
 window.addEventListener('load', () => {
     setTimeout(fixTrainingMoodAssociations, 1000);
 });
+    

@@ -27,15 +27,34 @@ app.post('/api/huggingface', async (req, res) => {
         console.log(`Attempt ${attempt}/${maxAttempts} for model ${model}`);
         console.log(`Request inputs type: ${typeof inputs}`);
         
-        // Adapt the request based on whether we're using a DeepSeek model
+        // Determine request format based on model
         const isDeepSeekModel = model.toLowerCase().includes('deepseek');
+        const isDialoGPTModel = model.toLowerCase().includes('dialogpt');
         
-        // Configure request differently based on model type
-        const requestData = isDeepSeekModel 
-          ? { messages: inputs, ...parameters } // Message format for DeepSeek models
-          : { inputs, parameters };             // Standard format for other models
+        let requestData;
         
-        console.log(`Using ${isDeepSeekModel ? 'DeepSeek' : 'standard'} request format`);
+        if (isDeepSeekModel) {
+          // DeepSeek uses a message format
+          requestData = { messages: inputs, ...parameters };
+          console.log("Using DeepSeek request format");
+        } 
+        else if (isDialoGPTModel) {
+          // DialoGPT expects inputs to be a simple string, not an object
+          if (typeof inputs === 'object' && inputs.text) {
+            requestData = { inputs: inputs.text, ...parameters };
+            console.log("Converting DialoGPT inputs from object to string");
+          } else {
+            requestData = { inputs, ...parameters };
+          }
+          console.log("Using DialoGPT request format");
+        }
+        else {
+          // Standard format for other models
+          requestData = { inputs, parameters };
+          console.log("Using standard request format");
+        }
+        
+        console.log("Request payload:", JSON.stringify(requestData).substring(0, 500) + "...");
         
         const response = await axios.post(
           `https://api-inference.huggingface.co/models/${model}`,
@@ -77,6 +96,28 @@ app.post('/api/huggingface', async (req, res) => {
           }
         }
         
+        // Handle format errors (422)
+        if (error.response && error.response.status === 422) {
+          console.log("Format error detected (422). Trying different format on next attempt.");
+          
+          // If we have a structured inputs object, try using a simpler format on next attempt
+          if (typeof inputs === 'object' && inputs.text) {
+            // Next attempt will use the simplified inputs format
+            inputs = inputs.text;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue; // Try again with simplified format
+          }
+        }
+        
+        // Handle "model too large" errors
+        if (error.response && error.response.status === 403) {
+          const errorMessage = error.response.data?.error || '';
+          if (errorMessage.includes('too large')) {
+            console.error('Model too large for free tier. Suggesting smaller model...');
+            break; // Don't retry for "too large" errors
+          }
+        }
+        
         // Handle other status codes
         if (error.response && error.response.status === 404) {
           console.error('Model not found. Check the model name and ensure it exists on Hugging Face.');
@@ -99,6 +140,29 @@ app.post('/api/huggingface', async (req, res) => {
     console.error(`All ${maxAttempts} attempts failed for model ${model}`);
     
     if (lastError.response) {
+      // If the model is too large, suggest alternatives
+      if (lastError.response.status === 403 && 
+          lastError.response.data?.error?.includes('too large')) {
+        return res.status(403).json({ 
+          error: lastError.response.data.error,
+          message: "Try using one of these smaller models instead: microsoft/DialoGPT-medium, facebook/blenderbot-400M-distill, or gpt2.",
+          suggestedModels: [
+            "microsoft/DialoGPT-medium",
+            "facebook/blenderbot-400M-distill",
+            "gpt2"
+          ]
+        });
+      }
+      
+      // For format errors, send a clearer message
+      if (lastError.response.status === 422) {
+        return res.status(422).json({
+          error: "Format error: The model expects a different input format",
+          details: lastError.response.data,
+          suggestion: "Try using a simple string as input instead of an object"
+        });
+      }
+      
       console.error('Final error status:', lastError.response.status);
       // For a cleaner response, don't send the entire HTML
       res.status(502).json({ 
@@ -118,17 +182,23 @@ app.post('/api/huggingface', async (req, res) => {
   }
 });
 
-// Add a fallback endpoint for backup model
+// Add a fallback endpoint with smaller models that always work
 app.post('/api/fallback', async (req, res) => {
   try {
     console.log("Using fallback model");
     const { inputs } = req.body;
     const API_KEY = process.env.HUGGINGFACE_API_KEY || "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";
     
-    // Use a smaller, faster model as fallback
+    // Extract text from complex inputs if needed
+    let inputText = inputs;
+    if (typeof inputs === 'object' && inputs.text) {
+      inputText = inputs.text;
+    }
+    
+    // Use DialoGPT-medium as fallback (more reliable than large model)
     const response = await axios.post(
-      `https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill`,
-      { inputs },
+      `https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium`,
+      { inputs: inputText },
       { 
         headers: {
           'Authorization': `Bearer ${API_KEY}`,
@@ -156,8 +226,8 @@ app.get('/api/available-models', async (req, res) => {
     const modelsToCheck = [
       "facebook/blenderbot-400M-distill",
       "gpt2",
-      "deepseek-ai/DeepSeek-R1",
-      "microsoft/DialoGPT-medium"
+      "microsoft/DialoGPT-medium",
+      "microsoft/DialoGPT-small"
     ];
     
     for (const model of modelsToCheck) {
@@ -199,5 +269,5 @@ app.get('/api/available-models', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Test the server at: http://localhost:${PORT}/deepseek-test.html`);
+  console.log(`Test DialoGPT at: http://localhost:${PORT}/dialogpt-test.html`);
 });
