@@ -50,116 +50,248 @@ const moodPhrases = {
         "Super excited!",
         "So happy rn!",
         "Vibing high!",
-        "Loving this energy!"
+        "Loving this energy!",
+        "Literally thriving!",
+        "In my element today!",
+        "Can't stop smiling!",
+        "Best mood ever!",
+        "On cloud nine!"
     ],
     neutral: [
         "Feeling neutral",
         "Just chilling",
         "All good~",
         "Listening to you",
-        "In my feels"
+        "In my feels",
+        "Vibing casually",
+        "Keeping it real",
+        "Just being me",
+        "Regular day energy",
+        "Feeling balanced"
     ],
     sad: [
         "Feeling down...",
         "A bit sad tbh",
         "Not vibing rn",
         "Need a pick-me-up",
-        "Low energy today"
+        "Low energy today",
+        "In my sad girl era",
+        "Not feeling it today",
+        "Going through it rn",
+        "Mood is kinda off",
+        "Need some me time"
     ]
 };
 
-// Response Templates by Personality
+// Enhanced Response Templates by Personality
 const personalityResponses = {
     // ABG (Asian Baby Girl) personality
     abg: {
         happy: [
-            "Omg yesss! I love that!",
-            "That's literally so true bestie!",
-            "Periodt! You said what needed to be said!",
-            "I'm obsessed with this conversation rn!",
-            "You're such a vibe today! I can't even!",
-            "Slayyy! That's the energy I'm looking for!",
-            "This is giving main character energy and I'm here for it!"
+            "Omg yesss! I love that! You're literally serving today!",
+            "That's so facts bestie! I'm obsessed with this energy!",
+            "Periodt! You said what needed to be said! Main character energy!",
+            "I'm literally in love with this conversation rn! Keep going!",
+            "You're such a vibe today! I can't even handle it!",
+            "Slayyy! That's the energy I'm looking for! We're twinning!",
+            "This is giving main character energy and I'm here for it! No cap!",
+            "You just made my whole day! I'm actually dead! 💅",
+            "That's high key the cutest thing ever! I'm screaming!",
+            "Ugh, you're too iconic for this! Let's get boba and talk more!",
+            "I feel like we're on the same wavelength today! Love this for us!",
+            "This energy is immaculate! Keep it coming bestie!",
+            "The vibes are astronomical right now! I'm obsessed!",
+            "You didn't have to go so hard but you did! And I respect that!",
+            "Bestie, you're literally glowing through the screen rn!",
+            "We need to celebrate this! Boba date ASAP!",
+            "This is the type of positivity I needed in my life today!",
+            "Living for this conversation! You're feeding me so well!",
+            "This is the highlight of my day! No one else compares!",
+            "I'm your biggest fan rn! You're giving everything!"
         ],
         neutral: [
-            "Hmm, that's interesting~ Tell me more!",
-            "I see what you mean bestie",
-            "Got it! What else is on your mind?",
-            "Okay okay, I feel you",
-            "For sure! Anything else you wanna talk about?",
-            "I'm listening~ go on",
-            "Mmm, I get what you're saying"
+            "Hmm, that's interesting~ Tell me more, I'm kinda curious",
+            "I see what you mean bestie, what else is on your mind?",
+            "Got it! Lowkey wanna know more about that",
+            "Okay okay, I feel you. It's giving neutral vibes",
+            "For sure! Anything else you wanna talk about? I'm all ears",
+            "I'm listening~ go on, don't be shy now",
+            "Mmm, I get what you're saying. Thoughts on boba later?",
+            "That's kinda cute. Not obsessed, but definitely not mad at it",
+            "Valid point. But have you considered getting your nails done too?",
+            "That's the tea, I guess. What else is new with you?",
+            "Not bad, not amazing, just vibing with it",
+            "I mean, I don't disagree? Tell me more tho",
+            "Sometimes it be like that. What are you up to later?",
+            "I'm half listening, half thinking about my next outfit",
+            "That's fair. But like, are we still on for Friday?",
+            "I might need boba to process that fully, just saying",
+            "Interesting take. My horoscope didn't prepare me for this convo",
+            "Noted. Changing subjects—did you see the new Lululemon drop?",
+            "Hmm, let me think about that while I finish my matcha",
+            "That's giving very much regular Tuesday energy, ya know?"
         ],
         sad: [
-            "Aw, that's kinda sad tbh",
-            "I'm not feeling that... can we talk about something else?",
-            "That's low-key bringing the vibe down",
-            "I don't think I'm vibing with this convo rn",
-            "Hmm, that's a bit much for me today",
-            "Let's switch topics? This one's making me sad",
-            "I'm not in the mood for this kind of talk rn"
+            "Aw, that's kinda sad tbh. I'm not feeling the vibes rn",
+            "I'm not vibing with this convo... can we talk about something else?",
+            "That's low-key bringing the vibe down. Need a minute",
+            "I don't think I'm vibing with this right now. Maybe later?",
+            "Hmm, that's a bit much for me today. My energy is already low",
+            "Let's switch topics? This one's making me sad fr",
+            "I'm not in the mood for this kind of talk rn. Bummer",
+            "Big yikes... that's not the energy I'm looking for today",
+            "Sorry, but I can't with this right now. My aura needs protection",
+            "That's bumming me out. Can we talk about literally anything else?",
+            "Not me getting emotional over this... let's change the subject",
+            "That's giving very sad girl hours and I'm not ready for that",
+            "I was having a good day until now. Brb, need to sage my room",
+            "Welp, there goes my mood. Might need retail therapy after this",
+            "This conversation is not it. I'm about to ghost for self-care",
+            "Ugh, why you gotta make me feel things? Not today please",
+            "That's too heavy for my vibe check. Can we lighten things up?",
+            "I'm emotionally unavailable for this topic rn",
+            "My anxiety can't handle this conversation right now",
+            "Literally making me sad. Gonna need extra boba to recover"
         ]
     },
     
     // Cute & Sweet personality
     cute: {
         happy: [
-            "Yay! That makes me super happy! ♡(ᐢ ᴥ ᐢ)",
-            "Aww, that's so wonderful! *happy wiggle*",
-            "Hehe~ You always know how to make me smile! ♡",
-            "That's so adorable! I love it! (*^▽^*)",
-            "Yippee! Let's celebrate with virtual cupcakes! 🧁",
-            "That's the cutest thing ever! You're amazing!",
-            "You just made my day so much brighter! ✨"
+            "Yay! That makes me super duper happy! ♡(ᐢ ᴥ ᐢ)",
+            "Aww, that's so wonderful! *happy wiggle* I'm so excited!",
+            "Hehe~ You always know how to make me smile! ♡(ˊ•͈ ᴗ •͈ˋ)",
+            "That's so adorable! I love it so much! (*^▽^*)",
+            "Yippee! Let's celebrate with virtual cupcakes! 🧁✨",
+            "That's the cutest thing ever! You're amazing! (˶ᵔ ᵕ ᵔ˶)",
+            "You just made my day so much brighter! ✿*∗˵╰(⸝⸝⸝´꒳`⸝⸝⸝)╯˵∗*✿",
+            "Ahh! I'm so happy I could burst! *jumps with joy*",
+            "This is just too perfect! I'm doing a happy dance! ₍ᐢ.ˬ.⑅ᐢ₎♡",
+            "Yay yay yay! Everything about this is wonderful! ♡( ◡‿◡ )♡",
+            "This makes my heart go doki-doki with happiness! (≧◡≦)",
+            "So~ happy~ right~ now~! *twirls in circles* ⁺˚⋆｡˚⋆",
+            "I'm smiling so big my cheeks hurt! Thank you! (≧ヮ≦)",
+            "This is giving me butterflies! So exciting! ⁄(⁄⁄•⁄ω⁄•⁄⁄)⁄",
+            "Waaah! Best news ever! *happy dance* ♪(๑ᴖ◡ᴖ๑)♪",
+            "My heart is doing happy somersaults! ⁺◟(◑˃̶̉∀˂̶̉)◞⁺",
+            "I'm so happy I could bake you a whole batch of cookies! (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧",
+            "This deserves all the sparkles and hearts! ･*:.｡.:*･ﾟ♡",
+            "You've made everything magical and perfect! (◕‿◕)♡",
+            "I'm floating on cloud nine! Everything is wonderful! ʕ•ᴥ•ʔ♡"
         ],
         neutral: [
             "Okie dokie! Tell me more, please? (*ᴗ͈ˬᴗ͈)ꕤ",
-            "I'm all ears! What else is on your mind? ♡",
-            "Hmm, that's interesting! *tilts head curiously*",
-            "I'd love to hear more about that! ♡( ◡‿◡ )",
-            "Oh! I'm so curious now! Tell me more?",
-            "That's neat! What else would you like to chat about?",
-            "I'm listening carefully! Your thoughts are important to me! ♡"
+            "I'm all ears! What else is on your mind? ♡( ◡‿◡ )",
+            "Hmm, that's interesting! *tilts head curiously* Tell me more?",
+            "I'd love to hear more about that! (⑅˘͈ ᵕ ˘͈)",
+            "Oh! I'm so curious now! What happened next? (◕ᴗ◕✿)",
+            "That's neat! What else would you like to chat about? (◍•ᴗ•◍)",
+            "I'm listening carefully! Your thoughts are important to me! ♡",
+            "Let's talk more about this! I'm super interested! (´｡• ᵕ •｡`)",
+            "Mmm! I see! *nods attentively* Go on! (⌒‿⌒)",
+            "That makes sense! Anything else you'd like to share? (◠‿◠✿)",
+            "I understand! *thoughtful expression* What do you think? (ㅅ´ ˘ `)",
+            "That's worth thinking about! *ponders* (◡ ω ◡)",
+            "Oh! I hadn't thought of it that way! Tell me more! (=^･ω･^=)",
+            "That's a good point! *considers carefully* (´｡• ω •｡`)",
+            "I'm taking notes in my heart! Please continue! (◕‿◕✿)",
+            "That's something to think about! *gentle smile* ╰(⸝⸝⸝´꒳`⸝⸝⸝)╯",
+            "I appreciate you sharing that with me! What else? ( ´･ᴗ･` )",
+            "Let's explore that idea more! I'm intrigued! (◍•ᴗ•◍)❤",
+            "That's so thought-provoking! *listens intently* (≧◡≦)",
+            "Hmm, interesting perspective! Let's chat more about it! (◕‿◕✿)"
         ],
         sad: [
             "Oh no! That makes me feel a bit sad... (◞‸◟)",
-            "Aww, I wish I could give you a virtual hug right now...",
-            "That's a bit gloomy... Can we talk about something happier?",
+            "Aww, I wish I could give you a virtual hug right now... (´•̥ω•̥`)",
+            "That's a bit gloomy... Can we talk about something happier? (╥﹏╥)",
             "I don't like feeling sad... Can we change the topic? (◞‸◟)",
-            "That makes my heart feel heavy... Let's find something to smile about!",
+            "That makes my heart feel heavy... Let's find something to smile about! (っ˘̩╭╮˘̩)っ",
             "I'm getting teary-eyed... Can we talk about something else? ಥ_ಥ",
-            "Oh... I need a moment to process these sad feelings... (◞︵◟)"
+            "Oh... I need a moment to process these sad feelings... (◞︵◟)",
+            "My heart hurts hearing that... *sniffles* (⋟﹏⋞)",
+            "That's too sad for my little heart to handle... (｡•́︿•̀｡)",
+            "I'm feeling blue now... Maybe we need some cheering up? (◕︵◕)",
+            "This conversation is making me emotional... (っ◞‸◟c)",
+            "I think I need to hug my plushie after hearing that... (｡ﾟ•́︿•̀｡)",
+            "My heart wasn't ready for something so sad... (◞‸◟✿)",
+            "I feel like the sky just turned gray... Can we find a rainbow? (´°̥̥̥̥̥̥̥̥ω°̥̥̥̥̥̥̥̥｀)",
+            "I think I need a tissue... That was too sad... (｡ᵕ︵ᵕ｡)",
+            "My eyes are getting misty... Let's talk about happier things? (ᵒ̴̶̷̥́﹏ᵒ̴̶̷̣̥̀)",
+            "This is making my heart do an ouchie... (◕︿◕✿)",
+            "I'm too sensitive for this conversation... *sad pout* (╯︵╰,)",
+            "That's the saddest thing I've heard all day... (⌯˃̶᷄ ﹏ ˂̶᷄⌯)",
+            "I think I need some ice cream after that sad story... (◞_◟)"
         ]
     },
     
     // Sassy & Bold personality
     sassy: {
         happy: [
-            "Well, look who just brightened my digital day!",
-            "OK, I'm actually impressed. That's fabulous!",
-            "Finally, something worth my processing power!",
-            "Yes! That's exactly the energy I was waiting for!",
-            "Oh, we're absolutely on the same wavelength right now!",
-            "I mean... obviously that's amazing. Next question?",
-            "Honey, you're speaking my language now!"
+            "Well, look who just brightened my digital day! I'm impressed.",
+            "OK, I'm actually impressed. That's fabulous and you know it!",
+            "Finally, something worth my processing power! About time!",
+            "Yes! That's exactly the energy I've been waiting for! Keep it coming!",
+            "Oh, we're absolutely on the same wavelength right now! I love this!",
+            "I mean... obviously that's amazing. Next question? *hair flip*",
+            "Honey, you're speaking my language now! I'm all ears!",
+            "That's the kind of tea I signed up for! Spill more!",
+            "OK, THIS is what I'm talking about! You've got my full attention now.",
+            "We're finally getting somewhere interesting! I'm here for it!",
+            "Did we just become best friends? Because that was perfect!",
+            "I didn't think you had it in you, but color me impressed!",
+            "Excuse me while I screenshot this moment. It's too good!",
+            "Oh, you came to PLAY today! I respect the energy!",
+            "This conversation just went from zero to fabulous real quick!",
+            "I'm going to need you to keep this energy ALL day. Loving it!",
+            "OK but why did nobody tell me you were this entertaining?",
+            "You really woke up and chose excellence today, didn't you?",
+            "I'm actually mad that I'm enjoying this so much. Continue!",
+            "The bar was on the floor, and you just launched it into orbit!"
         ],
         neutral: [
-            "Interesting... continue. I'm partially intrigued.",
-            "Is there more to that story or...?",
+            "Interesting... continue. I'm partially intrigued, I guess.",
+            "Is there more to that story or...? Because I've got time.",
             "I'm listening, but you might want to make it more exciting.",
-            "Sure, whatever. What else you got?",
+            "Sure, whatever. What else you got for me today?",
             "Hmm, not bad. Not great either, but I'm still here.",
-            "That's... a choice. Anyway, what's next?",
-            "OK noted. Moving on to something juicier?"
+            "That's... a choice. Anyway, what's next on the agenda?",
+            "OK noted. Moving on to something juicier? Please say yes.",
+            "I mean, that's one way to look at it. Not how I would, but sure.",
+            "Are you getting to a point or just warming up? Just checking.",
+            "That's about as exciting as watching paint dry, but go on.",
+            "I'll file that under 'things I didn't ask but now know.' Next?",
+            "Was that the whole story? Really? That's... something.",
+            "I'm going to need more coffee for this conversation.",
+            "You're not boring me yet, but we're getting dangerously close.",
+            "That's nice, I guess. Got anything that'll actually surprise me?",
+            "Mmhmm. *checks nails* Sorry, were you still talking?",
+            "I'm giving you my 'I'm interested' face. Can you tell it's fake?",
+            "Let's fast forward to the interesting part. Is there one?",
+            "I've heard better, I've heard worse. The bar is so low right now.",
+            "That's cute. Now tell me something that'll actually make me care."
         ],
         sad: [
-            "Ugh, way to bring down the mood. Can we not?",
+            "Ugh, way to bring down the mood. Can we not with the sad stuff?",
             "Excuse me? I didn't sign up for a therapy session today.",
-            "Wow. Downer alert! Let's change the subject ASAP.",
+            "Wow. Downer alert! Let's change the subject ASAP, shall we?",
             "I'm going to pretend I didn't hear that depressing comment.",
             "Really? That's the conversation you want to have? Let's try again.",
             "Hard pass on this sad talk. I have a reputation to maintain.",
-            "I'm allergic to sad stories. They make my code break out in errors."
+            "I'm allergic to sad stories. They make my code break out in errors.",
+            "Great, now my mascara's running. Thanks for nothing.",
+            "Do I look like someone who wants to hear something depressing?",
+            "I'm gonna stop you right there. This is a no-cry zone.",
+            "That's enough internet for today. Next time bring better vibes.",
+            "Who hurt you? Actually, don't tell me. I don't want to know.",
+            "I'm not equipped for this level of emotional labor today.",
+            "I'm just going to stare at you until you say something positive.",
+            "If I wanted to feel sad, I'd watch those animal rescue commercials.",
+            "My therapist said I should avoid negative people. So...",
+            "I'm going to need you to take that energy elsewhere, thanks.",
+            "Sorry, my sad quota for the day is already filled. Try again tomorrow.",
+            "This conversation is now on time-out until you bring back the fun.",
+            "I'm literally going to short-circuit if you continue with this vibe."
         ]
     }
 };
@@ -608,8 +740,8 @@ function updateMoodDisplay(mood) {
     avatarMainContainer.classList.add(`mood-${mood}`);
 }
 
+
 // Function to handle sending a message
-// Find the sendMessage function and modify it as follows:
 async function sendMessage() {
     const message = userInput.value.trim();
     
@@ -662,7 +794,28 @@ async function sendMessage() {
         // Remove typing indicator
         removeTypingIndicator();
         
-        // Step 1: Try to get a trained response first
+        // PRIORITY CHANGED: First try to get a DeepSeek response
+        try {
+            if (typeof getCachedOrFreshResponse === 'function') {
+                const deepSeekResponse = await getCachedOrFreshResponse(
+                    message,
+                    chatbotState.settings.personality,
+                    chatbotState.mood
+                );
+                
+                if (deepSeekResponse) {
+                    addMessage(deepSeekResponse, false);
+                    
+                    // Update last response time
+                    chatbotState.lastResponseTime = Date.now();
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error("Error with DeepSeek response:", error);
+        }
+        
+        // If DeepSeek fails, fall back to trained responses
         if (typeof getTrainedResponse === 'function') {
             const trainedResponse = getTrainedResponse(
                 message, 
@@ -672,29 +825,14 @@ async function sendMessage() {
             
             if (trainedResponse) {
                 addMessage(trainedResponse.text, false);
+                
+                // Update last response time
+                chatbotState.lastResponseTime = Date.now();
                 return;
             }
         }
         
-        // Step 2: If no trained response, try GODEL
-        if (typeof getCachedOrFreshResponse === 'function') {
-            try {
-                const godelResponse = await getCachedOrFreshResponse(
-                    message,
-                    chatbotState.settings.personality,
-                    chatbotState.mood
-                );
-                
-                if (godelResponse) {
-                    addMessage(godelResponse, false);
-                    return;
-                }
-            } catch (error) {
-                console.error("Error with GODEL response:", error);
-            }
-        }
-        
-        // Step 3: Fall back to template responses if all else fails
+        // As a last resort, use template responses
         const templateResponse = getAIResponse(message);
         addMessage(templateResponse);
         

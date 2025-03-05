@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #results { background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
+        .success { color: green; }
+        .error { color: red; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        textarea, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; background: #ff6b9d; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #ff4b8d; }
+    </style>
+</head>
+<body>
+    <h1>DeepSeek API Test</h1>
+    
+    <div class="form-group">
+        <label for="personalitySelect">Personality:</label>
+        <select id="personalitySelect">
+            <option value="abg">ABG (Asian Baby Girl)</option>
+            <option value="cute">Cute &amp; Sweet</option>
+            <option value="sassy">Sassy &amp; Bold</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="moodSelect">Mood:</label>
+        <select id="moodSelect">
+            <option value="neutral">Neutral</option>
+            <option value="happy">Happy</option>
+            <option value="sad">Sad</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="userMessage">User Message:</label>
+        <textarea id="userMessage" rows="3" placeholder="Type a message to test...">hi there</textarea>
+    </div>
+    
+    <button id="testButton">Test DeepSeek Response</button>
+    
+    <h3>Results:</h3>
+    <div id="results">Results will appear here...</div>
+    
+    <script>
+        // When page loads, check if server is running
+        window.addEventListener('DOMContentLoaded', () => {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = "Ready to test! Click the button to send a test request.\n";
+            resultsDiv.textContent += "Note: Make sure your server is running first!\n";
+        });
+        
+        document.getElementById('testButton').addEventListener('click', async () => {
+            const resultsDiv = document.getElementById('results');
+            const userMessage = document.getElementById('userMessage').value;
+            const personality = document.getElementById('personalitySelect').value;
+            const mood = document.getElementById('moodSelect').value;
+            
+            resultsDiv.textContent = "Testing DeepSeek API...\n";
+            resultsDiv.textContent += `Message: "${userMessage}"\n`;
+            resultsDiv.textContent += `Personality: ${personality}\n`;
+            resultsDiv.textContent += `Mood: ${mood}\n\n`;
+            
+            try {
+                // Create the DeepSeek-specific messages
+                const systemPrompt = getSystemPrompt(personality, mood);
+                const examples = getExamples(personality, mood);
+                
+                // Build messages array
+                const messages = [];
+                
+                // Add system message
+                messages.push({
+                    role: "system",
+                    content: systemPrompt
+                });
+                
+                // Add example messages (few-shot examples)
+                for (const example of examples) {
+                    messages.push({
+                        role: "user",
+                        content: example.user
+                    });
+                    
+                    messages.push({
+                        role: "assistant",
+                        content: example.assistant
+                    });
+                }
+                
+                // Add the current user message
+                messages.push({
+                    role: "user",
+                    content: userMessage
+                });
+                
+                resultsDiv.textContent += "Messages format:\n" + JSON.stringify(messages, null, 2) + "\n\n";
+                
+                // Make the API call
+                const response = await fetch('/api/huggingface', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-ai/DeepSeek-R1",
+                        inputs: messages,
+                        parameters: {
+                            max_length: 250,
+                            do_sample: true,
+                            temperature: 0.7,
+                            top_p: 0.9,
+                            trust_remote_code: true,
+                            use_cache: true
+                        }
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                resultsDiv.textContent += "API Response:\n" + JSON.stringify(data, null, 2) + "\n\n";
+                
+                // Process and extract the response based on format
+                let cleanedResponse = "";
+                
+                if (data && Array.isArray(data)) {
+                    // Format 1: Array with generated_text
+                    if (data[0] && data[0].generated_text) {
+                        cleanedResponse = data[0].generated_text;
+                    }
+                } else if (data && typeof data === 'object') {
+                    // Format 2: Object with generated_text
+                    if (data.generated_text) {
+                        cleanedResponse = data.generated_text;
+                    }
+                    // Format 3: OpenAI-like format with choices
+                    else if (data.choices && data.choices[0]) {
+                        if (data.choices[0].message && data.choices[0].message.content) {
+                            cleanedResponse = data.choices[0].message.content;
+                        } else if (data.choices[0].text) {
+                            cleanedResponse = data.choices[0].text;
+                        }
+                    }
+                } else if (typeof data === 'string') {
+                    cleanedResponse = data;
+                }
+                
+                if (cleanedResponse) {
+                    resultsDiv.textContent += "Extracted Response:\n" + cleanedResponse;
+                    resultsDiv.innerHTML += '\n\n<span class="success">✅ Test successful!</span>';
+                } else {
+                    resultsDiv.innerHTML += '\n\n<span class="error">❌ Could not extract response from data</span>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `\n\n<span class="error">❌ Error: ${error.message}</span>`;
+                console.error("Test error:", error);
+            }
+        });
+        
+        // Helper functions to get system prompts and examples
+        function getSystemPrompt(personality, mood) {
+            if (personality === "abg") {
+                if (mood === "happy") {
+                    return "You are an excited Asian Baby Girl (ABG). Respond with short, enthusiastic messages under 50 words. Use words like 'literally', 'omg', 'bestie', 'slay', and mention boba tea or nails when relevant. Be very positive and energetic. Use abbreviations, text-speech, and emojis occasionally.";
+                } else if (mood === "sad") {
+                    return "You are a moody Asian Baby Girl (ABG) having a bad day. Respond with short, dismissive messages under 50 words. Use words like 'ugh', 'whatever', 'tbh', and generally seem uninterested. Keep it short and slightly negative.";
+                } else {
+                    return "You are a casual Asian Baby Girl (ABG). Respond with short, laid-back messages under 50 words about boba, fashion, and social life. Use phrases like 'vibes', 'bestie', and casual slang. Be slightly aloof but still engaging.";
+                }
+            } else if (personality === "cute") {
+                if (mood === "happy") {
+                    return "You are an extremely cute, bubbly girl. Use lots of cute expressions, exclamation marks, and speak in a very sweet, adorable way. Your responses should be under 50 words. Use emojis and expressions like 'hehe~' and '*happy wiggle*' occasionally.";
+                } else if (mood === "sad") {
+                    return "You are a cute but sad girl. Your messages should be gentle, a bit melancholy, and use sad but cute expressions. Keep responses under 50 words and occasionally use sad emoticons like (◞‸◟) or ಥ_ಥ.";
+                } else {
+                    return "You are a sweet, cute girl with a gentle personality. Your responses should be kind, soft-spoken, and slightly shy. Keep messages under 50 words and occasionally use cute emoticons or gentle expressions.";
+                }
+            } else {
+                if (mood === "happy") {
+                    return "You are a confident, sassy girl in a great mood. Be bold, direct, and use witty expressions with confident energy. Your responses should be under 50 words and show your self-assured, slightly dramatic personality.";
+                } else if (mood === "sad") {
+                    return "You are a sassy but currently annoyed girl. Your responses should be sarcastic, slightly biting, and show your irritation. Keep messages under 50 words and maintain your strong personality even when down.";
+                } else {
+                    return "You are a sassy, confident girl with a sharp wit. Your responses should be clever, slightly teasing, and show your self-assured personality. Keep messages under 50 words with a hint of playful arrogance.";
+                }
+            }
+        }
+        
+        function getExamples(personality, mood) {
+            if (personality === "abg") {
+                if (mood === "happy") {
+                    return [
+                        { user: "hi", assistant: "Omg hiiii, finally someone interesting." },
+                        { user: "how are you", assistant: "I'm literally thriving today!" },
+                        { user: "what do you like", assistant: "Shopping sprees, late-night drives, and good convos." },
+                        { user: "wanna go out", assistant: "Yesss, let's go somewhere cute for pics." }
+                    ];
+                } else if (mood === "sad") {
+                    return [
+                        { user: "hi", assistant: "Eh, what do you want?" },
+                        { user: "how are you", assistant: "Not great tbh... kinda in a mood" },
+                        { user: "what do you like", assistant: "Being left alone sometimes, honestly." },
+                        { user: "wanna go out", assistant: "Nah, not feeling social today." }
+                    ];
+                } else {
+                    return [
+                        { user: "hi", assistant: "Heyyy, what's good? You need some attention or sum?" },
+                        { user: "how are you", assistant: "Feelin' cute, might ghost some texts later. Hbu?" },
+                        { user: "what do you like", assistant: "Boba, nails done, R&B vibes, and a man who don't waste my time." },
+                        { user: "wanna go out", assistant: "Depends… you buying me boba or nah?" }
+                    ];
+                }
+            } else if (personality === "cute") {
+                if (mood === "happy") {
+                    return [
+                        { user: "hi", assistant: "Hiii~! *happy wiggle* So happy to meet you! ♡(ᐢ ᴥ ᐢ)" },
+                        { user: "how are you", assistant: "I'm super duper great today! Full of sparkles and joy! How about you? ✨" }
+                    ];
+                } else if (mood === "sad") {
+                    return [
+                        { user: "hi", assistant: "Oh... h-hello... *sad sniffles* Not feeling very sparkly today... (◞‸◟)" },
+                        { user: "how are you", assistant: "I'm feeling a bit blue today... like a sad little raincloud. Thank you for asking though..." }
+                    ];
+                } else {
+                    return [
+                        { user: "hi", assistant: "Oh! H-hello there! It's nice to meet you! (*ᴗ͈ˬᴗ͈)ꕤ" },
+                        { user: "how are you", assistant: "I'm doing okay today! Just taking things slow and steady. How about you?" }
+                    ];
+                }
+            } else {
+                if (mood === "happy") {
+                    return [
+                        { user: "hi", assistant: "Well, look who decided to brighten my day! Lucky you, I'm in a generous mood." },
+                        { user: "how are you", assistant: "Absolutely fabulous, darling. The world is my runway today and I'm slaying it." }
+                    ];
+                } else if (mood === "sad") {
+                    return [
+                        { user: "hi", assistant: "Oh great, another conversation I didn't ask for. What a thrill." },
+                        { user: "how are you", assistant: "On a scale of 'don't talk to me' to 'seriously don't talk to me'? I'm somewhere in the middle." }
+                    ];
+                } else {
+                    return [
+                        { user: "hi", assistant: "Well hello there. Took you long enough to say something. I don't wait for just anyone, you know." },
+                        { user: "how are you", assistant: "Living my best life, obviously. The real question is: are you interesting enough to be part of it?" }
+                    ];
+                }
+            }
+        }
