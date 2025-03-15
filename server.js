@@ -1,10 +1,118 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
+// Add dotenv configuration to load environment variables
+require('dotenv').config();
+
+// Import OpenAI
+const OpenAI = require("openai");
+
+// Create OpenAI client instance with API key from environment variable
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 // Serve static files
 app.use(express.static('.'));
 app.use(express.json({ limit: '10mb' })); // Increased limit for larger model responses
+
+// Add a new endpoint for OpenAI API
+app.post('/api/openai', async (req, res) => {
+  try {
+    console.log("Received OpenAI API request");
+    const { message, personality, mood, conversationHistory } = req.body;
+    
+    // Create system message for personality and mood
+    const systemMessage = createPersonalityPrompt(personality, mood);
+    
+    // Build messages array with history
+    const messages = [
+      { role: "system", content: systemMessage }
+    ];
+    
+    // Add conversation history if available
+    if (conversationHistory && 
+        conversationHistory.past_user_inputs && 
+        conversationHistory.generated_responses) {
+      
+      for (let i = 0; i < Math.min(
+        conversationHistory.past_user_inputs.length,
+        conversationHistory.generated_responses.length
+      ); i++) {
+        messages.push({ 
+          role: "user", 
+          content: conversationHistory.past_user_inputs[i] 
+        });
+        messages.push({ 
+          role: "assistant", 
+          content: conversationHistory.generated_responses[i] 
+        });
+      }
+    }
+    
+    // Add current message
+    messages.push({ role: "user", content: message });
+    
+    console.log("Sending request to OpenAI with messages:", messages.length);
+    
+    // Create completion
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo", // You can use "gpt-4o" if needed
+      messages: messages,
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+    
+    // Get response
+    const response = completion.choices[0].message.content;
+    console.log("Received OpenAI response:", response.substring(0, 50) + "...");
+    
+    res.json({ generated_text: response });
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function to create personality prompt
+function createPersonalityPrompt(personality, mood) {
+  // Using your existing personality prompts
+  if (personality === "abg") {
+    if (mood === "happy") {
+      return "Respond as an excited Asian Baby Girl (ABG). Be enthusiastic, use words like 'literally', 'omg', 'bestie', 'slay'.";
+    } 
+    else if (mood === "sad") {
+      return "Respond as a moody Asian Baby Girl (ABG). Be dismissive, use words like 'ugh', 'whatever', 'tbh'.";
+    } 
+    else { // neutral
+      return "Respond as a casual Asian Baby Girl (ABG). Be laid-back, use phrases like 'vibes', 'bestie'.";
+    }
+  } 
+  else if (personality === "cute") {
+    if (mood === "happy") {
+      return "Respond as a bubbly, cute girl. Use expressions like 'hehe~' and make your response adorable.";
+    } 
+    else if (mood === "sad") {
+      return "Respond as a sad but cute girl. Use gentle, melancholy expressions and sad emoticons.";
+    } 
+    else { // neutral
+      return "Respond as a sweet, gentle girl. Be kind and slightly shy in your response.";
+    }
+  } 
+  else if (personality === "sassy") {
+    if (mood === "happy") {
+      return "Respond as a confident, sassy girl in a good mood. Be bold and witty with confident energy.";
+    } 
+    else if (mood === "sad") {
+      return "Respond as a sassy but annoyed girl. Be sarcastic and show your irritation.";
+    } 
+    else { // neutral
+      return "Respond as a sassy, confident girl. Be clever and slightly teasing with playful arrogance.";
+    }
+  }
+  
+  return "Respond casually in a friendly tone.";
+}
 
 // Create a proxy endpoint for Hugging Face with retry logic
 app.post('/api/huggingface', async (req, res) => {

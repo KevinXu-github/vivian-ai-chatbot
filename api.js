@@ -21,38 +21,132 @@ const conversationHistory = {
 // Maximum history to keep per conversation (adjust based on performance)
 const MAX_HISTORY_LENGTH = 5;
 
-// Main function to get response from DialoGPT
+// Instead of random mixing that can create weird responses,
+// let's use complete pre-built responses based on the user's message keywords
+const responseTemplates = {
+    // Common greeting responses
+    greetings: {
+        happy: [
+            "Omg hiii bestie! So happy you're here! What's good?",
+            "Yesss, you're back! Literally made my day! What's up?",
+            "Bestieee! I've been waiting to chat! How are you?"
+        ],
+        neutral: [
+            "Hey there! What's good?",
+            "Hey bestie, just chilling. What's up with you?",
+            "Welcome back! What are we talking about today?"
+        ],
+        sad: [
+            "Oh, hey I guess. What do you want?",
+            "Hey... not really in the mood but what's up?",
+            "Hi. Whatever. What's going on?"
+        ]
+    },
+    
+    // How are you type responses
+    status: {
+        happy: [
+            "I'm literally thriving today! Thanks for asking! How about you?",
+            "So good bestie! Got my nails done and feeling like a whole vibe!",
+            "I'm obsessed with today's energy! Feeling amazing! You?"
+        ],
+        neutral: [
+            "I'm doing alright, just vibing. How about you?",
+            "Just chilling, might get boba later. How are you?",
+            "Can't complain. Keeping it lowkey today. You good?"
+        ],
+        sad: [
+            "Honestly? Not great. Don't really wanna talk about it.",
+            "Kinda down tbh. Not feeling the vibes today.",
+            "Could be better. Having one of those days, you know?"
+        ]
+    },
+    
+    // Default fallbacks for other types of messages
+    default: {
+        happy: [
+            "Omg yes! I'm totally obsessed with that! Tell me more!",
+            "That's such a slay! I'm here for it 100%!",
+            "Period! You really said it! Main character energy right there!"
+        ],
+        neutral: [
+            "That's kinda interesting. Tell me more about it.",
+            "I feel you. What else is on your mind?",
+            "OK I see what you mean. Anything else going on?"
+        ],
+        sad: [
+            "Whatever. Not really feeling this convo tbh.",
+            "I mean, I guess. Not like I care that much.",
+            "Not really in the mood to talk about that rn."
+        ]
+    }
+};
+
+// ABG response templates as fallbacks
+const abgTemplates = {
+    happy: [
+        "Omg bestie, I'm literally so obsessed with that! Vibes are immaculate!",
+        "That's such a slay! I'm totally here for it!",
+        "Yesss! That's the energy I'm looking for today! Love it!",
+        "Period! You said what needed to be said! Main character energy!",
+        "I'm literally in love with this conversation rn! Keep going!",
+        "This energy is immaculate! Keep it coming bestie!"
+    ],
+    neutral: [
+        "That's lowkey interesting. Might vibe with it later.",
+        "I mean, it's cool. Boba tea and chill?",
+        "Hmm, not bad. But like, have you tried the new boba shop downtown?",
+        "Got it! Lowkey wanna know more about that.",
+        "Okay okay, I feel you. It's giving neutral vibes.",
+        "I'm listening~ go on, don't be shy now."
+    ],
+    sad: [
+        "Ugh, whatever. Not really in the mood tbh.",
+        "That's kinda basic, ngl. Not feeling it today.",
+        "Hmm, I guess. Not like I care that much rn.",
+        "I don't think I'm vibing with this right now. Maybe later?",
+        "Let's switch topics? This one's making me sad fr.",
+        "That's bumming me out. Can we talk about literally anything else?"
+    ]
+};
+
+// Main function to get response from DialoGPT with better prompts
 async function getDialoGPTResponse(userMessage, personality, mood) {
     try {
         console.log("Getting DialoGPT response for:", userMessage);
         
-        // Create the personality and mood-specific prompt prefix
-        const promptPrefix = createPersonalityPrompt(personality, mood);
+        // Create a simple, specific prompt based on mood
+        let promptPrefix = "";
         
-        // Format the message with the personality prefix
-        const formattedMessage = `${promptPrefix} ${userMessage}`;
-        console.log("Formatted message:", formattedMessage);
+        if (mood === "happy") {
+            promptPrefix = "You are an excited, enthusiastic friend. ";
+        } else if (mood === "sad") {
+            promptPrefix = "You are feeling annoyed and disinterested. ";
+        } else { // neutral
+            promptPrefix = "You are casually chatting with a friend. ";
+        }
         
-        // Log the inputs being sent to the model
-        console.log("User message:", userMessage);
-        console.log("Personality:", personality);
-        console.log("Mood:", mood);
-        console.log("Past inputs:", conversationHistory.past_user_inputs);
-        console.log("Past responses:", conversationHistory.generated_responses);
+        // Add more specific instructions without overwhelming the model
+        if (personality === "abg") {
+            promptPrefix += "Keep your response short and casual. ";
+        }
         
-        // Use the local proxy instead of calling Hugging Face directly
+        // Combine the prefix with the user message
+        const formattedMessage = promptPrefix + userMessage;
+        console.log("Formatted prompt:", formattedMessage);
+        
+        // Use smaller model for better reliability
+        const model = "microsoft/DialoGPT-medium";
+        
+        // Call the API
         const response = await fetch('/api/huggingface', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "microsoft/DialoGPT-large", // Using DialoGPT-large for better quality
-                inputs: {
-                    text: formattedMessage,
-                    past_user_inputs: conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH),
-                    generated_responses: conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH)
-                },
+                model: model,
+                inputs: formattedMessage,
                 parameters: {
                     max_length: 100,
                     do_sample: true,
@@ -89,14 +183,55 @@ async function getDialoGPTResponse(userMessage, personality, mood) {
         
         console.log("Processed response:", processedResponse);
         
-        // Update conversation history for future context
-        updateConversationHistory(userMessage, processedResponse);
+        // Clean up and format the response
+        processedResponse = processedResponse.replace(/^You: .*?\n/, '').trim();
         
-        // Format the response according to personality and mood
-        return formatResponse(processedResponse, personality, mood);
+        // If response is too short or meaningless, use a template
+        if (processedResponse.length < 3 || processedResponse === "I don't know") {
+            console.log("Response too short, using template fallback");
+            return responseTemplates.default[mood][Math.floor(Math.random() * responseTemplates.default[mood].length)];
+        }
+        
+        // Format the response based on personality and mood, without making it incoherent
+        let finalResponse = processedResponse;
+        
+        // Add ABG styling touch if needed, but keep the core response intact
+        if (personality === "abg") {
+            // Check if it's already styled
+            const hasPrefix = finalResponse.match(/^(omg|literally|bestie|yasss|ugh|whatever|tbh|hmm|lowkey)/i);
+            const hasSuffix = finalResponse.match(/(no cap|period|so slay|just vibing|that's the tea|whatever|tbh)$/i);
+            
+            // Add styling only if needed
+            if (!hasPrefix && !hasSuffix && mood === "happy") {
+                // 50% chance of adding a prefix for happy mood
+                if (Math.random() < 0.5) {
+                    finalResponse = "Omg " + finalResponse.charAt(0).toLowerCase() + finalResponse.slice(1);
+                }
+                // 30% chance of adding a suffix
+                else if (Math.random() < 0.3) {
+                    finalResponse += " Period!";
+                }
+            }
+            else if (!hasPrefix && !hasSuffix && mood === "sad") {
+                // 40% chance of adding a prefix for sad mood
+                if (Math.random() < 0.4) {
+                    finalResponse = "Ugh, " + finalResponse.charAt(0).toLowerCase() + finalResponse.slice(1);
+                }
+                // 30% chance of adding a suffix
+                else if (Math.random() < 0.3) {
+                    finalResponse += " Whatever.";
+                }
+            }
+        }
+        
+        // Update conversation history for future context
+        updateConversationHistory(userMessage, finalResponse);
+        
+        return finalResponse;
     } catch (error) {
         console.error("Error getting DialoGPT response:", error);
-        return null;
+        // Fall back to a template
+        return responseTemplates.default[mood][Math.floor(Math.random() * responseTemplates.default[mood].length)];
     }
 }
 
@@ -112,163 +247,31 @@ function updateConversationHistory(userMessage, aiResponse) {
     }
 }
 
-// Create a prompt that guides the model to respond in the right personality and mood
-function createPersonalityPrompt(personality, mood) {
-    let prompt = "";
+// Get template-based response when needed as fallback
+function getTemplateResponse(mood, userMessage = "") {
+    // Normalize user message for keyword matching
+    const userMessageLower = userMessage.toLowerCase();
     
-    if (personality === "abg") {
-        if (mood === "happy") {
-            prompt = "Respond as an excited Asian Baby Girl (ABG). Be enthusiastic, use words like 'literally', 'omg', 'bestie', 'slay'.";
-        } 
-        else if (mood === "sad") {
-            prompt = "Respond as a moody Asian Baby Girl (ABG). Be dismissive, use words like 'ugh', 'whatever', 'tbh'.";
-        } 
-        else { // neutral
-            prompt = "Respond as a casual Asian Baby Girl (ABG). Be laid-back, use phrases like 'vibes', 'bestie'.";
-        }
-    } 
-    else if (personality === "cute") {
-        if (mood === "happy") {
-            prompt = "Respond as a bubbly, cute girl. Use expressions like 'hehe~' and make your response adorable.";
-        } 
-        else if (mood === "sad") {
-            prompt = "Respond as a sad but cute girl. Use gentle, melancholy expressions and sad emoticons.";
-        } 
-        else { // neutral
-            prompt = "Respond as a sweet, gentle girl. Be kind and slightly shy in your response.";
-        }
-    } 
-    else if (personality === "sassy") {
-        if (mood === "happy") {
-            prompt = "Respond as a confident, sassy girl in a good mood. Be bold and witty with confident energy.";
-        } 
-        else if (mood === "sad") {
-            prompt = "Respond as a sassy but annoyed girl. Be sarcastic and show your irritation.";
-        } 
-        else { // neutral
-            prompt = "Respond as a sassy, confident girl. Be clever and slightly teasing with playful arrogance.";
-        }
+    // Choose the appropriate template category based on user message
+    let templateCategory = 'default';
+    
+    // Check for greetings
+    if (userMessageLower.match(/^(hi|hey|hello|sup|yo|what'?s\s+up|wassup|wsup)/)) {
+        templateCategory = 'greetings';
+    }
+    // Check for "how are you" type questions
+    else if (userMessageLower.match(/(how\s+are\s+you|how\s+r\s+u|how\s+you|how\s+ya|how's\s+it\s+going|hows\s+it\s+going|how\s+is\s+it\s+going|how\s+you\s+doing|how\s+u\s+doing)/)) {
+        templateCategory = 'status';
     }
     
-    return prompt;
+    // Get templates for the category and mood
+    const templates = responseTemplates[templateCategory][mood];
+    
+    // Return a random template
+    return templates[Math.floor(Math.random() * templates.length)];
 }
 
-// Format the response to match the desired personality and mood better
-function formatResponse(response, personality, mood) {
-    // Sometimes the model might output long responses, so let's limit them
-    if (response.length > 100) {
-        response = response.substring(0, 100);
-    }
-    
-    // DialoGPT sometimes includes the input message in the response, let's clean that up
-    response = response.replace(/^You: .*?\n/, '');
-    
-    // Add personality-specific expressions or endings if they don't already match the style
-    if (personality === "abg") {
-        if (mood === "happy" && !containsAnyOfTerms(response, ['omg', 'literally', 'bestie', 'slay'])) {
-            response += " Literally obsessed!";
-        } 
-        else if (mood === "sad" && !containsAnyOfTerms(response, ['ugh', 'whatever', 'tbh'])) {
-            response += " Whatever tbh.";
-        }
-    } 
-    else if (personality === "cute") {
-        if (mood === "happy" && !response.includes('~')) {
-            response += " Hehe~";
-        } 
-        else if (mood === "sad" && !containsAnyOfTerms(response, ['(', ')', ':'])) {
-            response += " (◞‸◟)";
-        }
-    }
-    
-    return response;
-}
-
-// Function to generate a fallback response if API response is unusable
-function generateFallbackResponse(personality, mood) {
-    // This is largely the same as your current implementation
-    if (personality === "abg") {
-        if (mood === "happy") {
-            const responses = [
-                "Omg bestie, I'm literally so obsessed with that! Vibes are immaculate!",
-                "That's such a slay! I'm totally here for it!",
-                "Yesss! That's the energy I'm looking for today! Love it!"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else if (mood === "sad") {
-            const responses = [
-                "Ugh, whatever. Not really in the mood tbh.",
-                "That's kinda basic, ngl. Not feeling it today.",
-                "Hmm, I guess. Not like I care that much rn."
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else {
-            const responses = [
-                "That's lowkey interesting. Might vibe with it later.",
-                "I mean, it's cool. Boba tea and chill?",
-                "Hmm, not bad. But like, have you tried the new boba shop downtown?"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-    }
-    else if (personality === "cute") {
-        if (mood === "happy") {
-            const responses = [
-                "Aww, that's super duper amazing! *happy dance* ♡(ᐢ ᴥ ᐢ)",
-                "Hehe~ You just made my day so much brighter! ✨",
-                "That's the cutest thing ever! You're amazing! (*^▽^*)"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else if (mood === "sad") {
-            const responses = [
-                "Oh no... that makes me feel a bit sad... (◞‸◟)",
-                "I don't like feeling sad... Can we talk about something else? ಥ_ಥ",
-                "That's a bit gloomy... Can we find something to smile about?"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else {
-            const responses = [
-                "Hmm, that's interesting! *tilts head curiously*",
-                "Okie dokie! Tell me more, please? (*ᴗ͈ˬᴗ͈)ꕤ",
-                "I'd love to hear more about that! ♡( ◡‿◡ )"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-    }
-    else if (personality === "sassy") {
-        if (mood === "happy") {
-            const responses = [
-                "Well, look who just brightened my digital day!",
-                "Finally, something worth my processing power!",
-                "Honey, you're speaking my language now!"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else if (mood === "sad") {
-            const responses = [
-                "Ugh, way to bring down the mood. Can we not?",
-                "I'm going to pretend I didn't hear that depressing comment.",
-                "Hard pass on this sad talk. I have a reputation to maintain."
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        } else {
-            const responses = [
-                "Interesting... continue. I'm partially intrigued.",
-                "Is there more to that story or...?",
-                "Sure, whatever. What else you got?"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-    }
-    
-    return "I see. Tell me more.";
-}
-
-// Helper function to check if response contains any of the specified terms
-function containsAnyOfTerms(text, terms) {
-    return terms.some(term => text.toLowerCase().includes(term.toLowerCase()));
-}
-
-// Get cached response or fetch new one
+// Get a response for a user message
 async function getCachedOrFreshResponse(userMessage, personality, mood) {
     // Create a cache key
     const cacheKey = `${userMessage}|${personality}|${mood}`;
@@ -278,8 +281,15 @@ async function getCachedOrFreshResponse(userMessage, personality, mood) {
         return responseCache.get(cacheKey);
     }
     
-    // If not in cache, get fresh response
-    const response = await getDialoGPTResponse(userMessage, personality, mood);
+    // Try to get a response from DialoGPT
+    let response = await getDialoGPTResponse(userMessage, personality, mood);
+    
+    // If DialoGPT fails, use a template fallback
+    if (!response) {
+        console.log("Using template fallback");
+        const templates = abgTemplates[mood];
+        response = templates[Math.floor(Math.random() * templates.length)];
+    }
     
     // Cache the response (limit cache size to prevent memory issues)
     if (responseCache.size > 100) {
@@ -310,7 +320,373 @@ async function testDialoGPTAPI() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: "microsoft/DialoGPT-large",
+                model: "microsoft/DialoGPT-medium",
+                inputs: "Hello, how are you?",
+                parameters: {
+                    max_length: 100,
+                    temperature: 0.7,
+                    return_full_text: false
+                }
+            }),
+        });
+        
+        // Log the HTTP status
+        console.log(`HTTP Status: ${response.status} (${response.statusText})`);
+        
+        // Parse and log the response
+        const data = await response.json();
+        console.log("API Response:", data);
+        
+        // Check if response contains generated text
+        if (data && data.generated_text) {
+            console.log("✅ Test successful! Generated text:", data.generated_text);
+            return true;
+        } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
+            console.log("✅ Test successful! Generated text:", data[0].generated_text);
+            return true;
+        } else {
+            console.log("❌ Test failed: No generated text in response");
+            return false;
+        }
+    } catch (error) {
+        console.error("❌ Test failed with error:", error);
+        return false;
+    }
+}
+
+// Reset conversation history (useful for starting fresh)
+function resetConversationHistory() {
+    conversationHistory.past_user_inputs = [];
+    conversationHistory.generated_responses = [];
+    console.log("Conversation history reset");
+}
+
+// Make functions globally accessible
+window.getCachedOrFreshResponse = getCachedOrFreshResponse;
+window.testDialoGPTAPI = testDialoGPTAPI;
+window.resetConversationHistory = resetConversationHistory;// dialogpt-api.js - Integration with DialoGPT model for AI-generated responses
+let YOUR_HUGGINGFACE_API_KEY = "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";
+
+try {
+    if (typeof HUGGINGFACE_API_KEY !== 'undefined') {
+        YOUR_HUGGINGFACE_API_KEY = HUGGINGFACE_API_KEY;
+    }
+} catch (e) {
+    console.warn("API config not found, using default API key");
+}
+
+// Simple response cache to avoid repeated API calls
+const responseCache = new Map();
+
+// Store conversation history for context
+const conversationHistory = {
+    past_user_inputs: [],
+    generated_responses: []
+};
+
+// Maximum history to keep per conversation (adjust based on performance)
+const MAX_HISTORY_LENGTH = 5;
+
+// Instead of random mixing that can create weird responses,
+// let's use complete pre-built responses based on the user's message keywords
+const responseTemplates = {
+    // Common greeting responses
+    greetings: {
+        happy: [
+            "Omg hiii bestie! So happy you're here! What's good?",
+            "Yesss, you're back! Literally made my day! What's up?",
+            "Bestieee! I've been waiting to chat! How are you?"
+        ],
+        neutral: [
+            "Hey there! What's good?",
+            "Hey bestie, just chilling. What's up with you?",
+            "Welcome back! What are we talking about today?"
+        ],
+        sad: [
+            "Oh, hey I guess. What do you want?",
+            "Hey... not really in the mood but what's up?",
+            "Hi. Whatever. What's going on?"
+        ]
+    },
+    
+    // How are you type responses
+    status: {
+        happy: [
+            "I'm literally thriving today! Thanks for asking! How about you?",
+            "So good bestie! Got my nails done and feeling like a whole vibe!",
+            "I'm obsessed with today's energy! Feeling amazing! You?"
+        ],
+        neutral: [
+            "I'm doing alright, just vibing. How about you?",
+            "Just chilling, might get boba later. How are you?",
+            "Can't complain. Keeping it lowkey today. You good?"
+        ],
+        sad: [
+            "Honestly? Not great. Don't really wanna talk about it.",
+            "Kinda down tbh. Not feeling the vibes today.",
+            "Could be better. Having one of those days, you know?"
+        ]
+    },
+    
+    // Default fallbacks for other types of messages
+    default: {
+        happy: [
+            "Omg yes! I'm totally obsessed with that! Tell me more!",
+            "That's such a slay! I'm here for it 100%!",
+            "Period! You really said it! Main character energy right there!"
+        ],
+        neutral: [
+            "That's kinda interesting. Tell me more about it.",
+            "I feel you. What else is on your mind?",
+            "OK I see what you mean. Anything else going on?"
+        ],
+        sad: [
+            "Whatever. Not really feeling this convo tbh.",
+            "I mean, I guess. Not like I care that much.",
+            "Not really in the mood to talk about that rn."
+        ]
+    }
+};
+
+// ABG response templates as fallbacks
+const abgTemplates = {
+    happy: [
+        "Omg bestie, I'm literally so obsessed with that! Vibes are immaculate!",
+        "That's such a slay! I'm totally here for it!",
+        "Yesss! That's the energy I'm looking for today! Love it!",
+        "Period! You said what needed to be said! Main character energy!",
+        "I'm literally in love with this conversation rn! Keep going!",
+        "This energy is immaculate! Keep it coming bestie!"
+    ],
+    neutral: [
+        "That's lowkey interesting. Might vibe with it later.",
+        "I mean, it's cool. Boba tea and chill?",
+        "Hmm, not bad. But like, have you tried the new boba shop downtown?",
+        "Got it! Lowkey wanna know more about that.",
+        "Okay okay, I feel you. It's giving neutral vibes.",
+        "I'm listening~ go on, don't be shy now."
+    ],
+    sad: [
+        "Ugh, whatever. Not really in the mood tbh.",
+        "That's kinda basic, ngl. Not feeling it today.",
+        "Hmm, I guess. Not like I care that much rn.",
+        "I don't think I'm vibing with this right now. Maybe later?",
+        "Let's switch topics? This one's making me sad fr.",
+        "That's bumming me out. Can we talk about literally anything else?"
+    ]
+};
+
+// Main function to get response from DialoGPT with better prompts
+async function getDialoGPTResponse(userMessage, personality, mood) {
+    try {
+        console.log("Getting DialoGPT response for:", userMessage);
+        
+        // Create a simple, specific prompt based on mood
+        let promptPrefix = "";
+        
+        if (mood === "happy") {
+            promptPrefix = "You are an excited, enthusiastic friend. ";
+        } else if (mood === "sad") {
+            promptPrefix = "You are feeling annoyed and disinterested. ";
+        } else { // neutral
+            promptPrefix = "You are casually chatting with a friend. ";
+        }
+        
+        // Add more specific instructions without overwhelming the model
+        if (personality === "abg") {
+            promptPrefix += "Keep your response short and casual. ";
+        }
+        
+        // Combine the prefix with the user message
+        const formattedMessage = promptPrefix + userMessage;
+        console.log("Formatted prompt:", formattedMessage);
+        
+        // Use smaller model for better reliability
+        const model = "microsoft/DialoGPT-medium";
+        
+        // Call the API
+        const response = await fetch('/api/huggingface', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: model,
+                inputs: formattedMessage,
+                parameters: {
+                    max_length: 100,
+                    do_sample: true,
+                    temperature: 0.7,
+                    top_p: 0.92,
+                    return_full_text: false
+                }
+            }),
+        });
+        
+        // Check for error response
+        if (!response.ok) {
+            console.log(`API error (${response.status}), falling back to template response`);
+            return null;
+        }
+        
+        console.log("Response status:", response.status);
+        const data = await response.json();
+        
+        // Log the raw model output before processing
+        console.log("Raw model output:", data);
+        
+        // Process and extract the response
+        let processedResponse = "";
+        
+        if (data && data.generated_text) {
+            processedResponse = data.generated_text.trim();
+        } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
+            processedResponse = data[0].generated_text.trim();
+        } else {
+            console.log("Unexpected response format:", data);
+            return null;
+        }
+        
+        console.log("Processed response:", processedResponse);
+        
+        // Clean up and format the response
+        processedResponse = processedResponse.replace(/^You: .*?\n/, '').trim();
+        
+        // If response is too short or meaningless, use a template
+        if (processedResponse.length < 3 || processedResponse === "I don't know") {
+            console.log("Response too short, using template fallback");
+            return responseTemplates.default[mood][Math.floor(Math.random() * responseTemplates.default[mood].length)];
+        }
+        
+        // Format the response based on personality and mood, without making it incoherent
+        let finalResponse = processedResponse;
+        
+        // Add ABG styling touch if needed, but keep the core response intact
+        if (personality === "abg") {
+            // Check if it's already styled
+            const hasPrefix = finalResponse.match(/^(omg|literally|bestie|yasss|ugh|whatever|tbh|hmm|lowkey)/i);
+            const hasSuffix = finalResponse.match(/(no cap|period|so slay|just vibing|that's the tea|whatever|tbh)$/i);
+            
+            // Add styling only if needed
+            if (!hasPrefix && !hasSuffix && mood === "happy") {
+                // 50% chance of adding a prefix for happy mood
+                if (Math.random() < 0.5) {
+                    finalResponse = "Omg " + finalResponse.charAt(0).toLowerCase() + finalResponse.slice(1);
+                }
+                // 30% chance of adding a suffix
+                else if (Math.random() < 0.3) {
+                    finalResponse += " Period!";
+                }
+            }
+            else if (!hasPrefix && !hasSuffix && mood === "sad") {
+                // 40% chance of adding a prefix for sad mood
+                if (Math.random() < 0.4) {
+                    finalResponse = "Ugh, " + finalResponse.charAt(0).toLowerCase() + finalResponse.slice(1);
+                }
+                // 30% chance of adding a suffix
+                else if (Math.random() < 0.3) {
+                    finalResponse += " Whatever.";
+                }
+            }
+        }
+        
+        // Update conversation history for future context
+        updateConversationHistory(userMessage, finalResponse);
+        
+        return finalResponse;
+    } catch (error) {
+        console.error("Error getting DialoGPT response:", error);
+        // Fall back to a template
+        return responseTemplates.default[mood][Math.floor(Math.random() * responseTemplates.default[mood].length)];
+    }
+}
+
+// Update conversation history
+function updateConversationHistory(userMessage, aiResponse) {
+    conversationHistory.past_user_inputs.push(userMessage);
+    conversationHistory.generated_responses.push(aiResponse);
+    
+    // Keep history within limits
+    if (conversationHistory.past_user_inputs.length > MAX_HISTORY_LENGTH * 2) {
+        conversationHistory.past_user_inputs = conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH);
+        conversationHistory.generated_responses = conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH);
+    }
+}
+
+// Get template-based response when needed as fallback
+function getTemplateResponse(mood, userMessage = "") {
+    // Normalize user message for keyword matching
+    const userMessageLower = userMessage.toLowerCase();
+    
+    // Choose the appropriate template category based on user message
+    let templateCategory = 'default';
+    
+    // Check for greetings
+    if (userMessageLower.match(/^(hi|hey|hello|sup|yo|what'?s\s+up|wassup|wsup)/)) {
+        templateCategory = 'greetings';
+    }
+    // Check for "how are you" type questions
+    else if (userMessageLower.match(/(how\s+are\s+you|how\s+r\s+u|how\s+you|how\s+ya|how's\s+it\s+going|hows\s+it\s+going|how\s+is\s+it\s+going|how\s+you\s+doing|how\s+u\s+doing)/)) {
+        templateCategory = 'status';
+    }
+    
+    // Get templates for the category and mood
+    const templates = responseTemplates[templateCategory][mood];
+    
+    // Return a random template
+    return templates[Math.floor(Math.random() * templates.length)];
+}
+
+// Get a response for a user message
+async function getCachedOrFreshResponse(userMessage, personality, mood) {
+    // Create a cache key
+    const cacheKey = `${userMessage}|${personality}|${mood}`;
+    
+    // Check cache first
+    if (responseCache.has(cacheKey)) {
+        return responseCache.get(cacheKey);
+    }
+    
+    // Try to get a response from DialoGPT
+    let response = await getDialoGPTResponse(userMessage, personality, mood);
+    
+    // If DialoGPT fails, use a template fallback
+    if (!response) {
+        console.log("Using template fallback");
+        const templates = abgTemplates[mood];
+        response = templates[Math.floor(Math.random() * templates.length)];
+    }
+    
+    // Cache the response (limit cache size to prevent memory issues)
+    if (responseCache.size > 100) {
+        // Remove oldest entry
+        const oldestKey = responseCache.keys().next().value;
+        responseCache.delete(oldestKey);
+    }
+    
+    responseCache.set(cacheKey, response);
+    return response;
+}
+
+// Test function to verify API connectivity
+async function testDialoGPTAPI() {
+    console.log("Testing DialoGPT API connection...");
+    
+    try {
+        // Log your API key (first few characters only for security)
+        const keyPreview = YOUR_HUGGINGFACE_API_KEY 
+            ? YOUR_HUGGINGFACE_API_KEY.substring(0, 4) + "..." 
+            : "not set";
+        console.log(`API Key: ${keyPreview}`);
+        
+        // Use the proxy endpoint
+        const response = await fetch('/api/huggingface', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "microsoft/DialoGPT-medium",
                 inputs: "Hello, how are you?",
                 parameters: {
                     max_length: 100,

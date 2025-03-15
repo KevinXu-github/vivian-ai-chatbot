@@ -18,6 +18,7 @@ const showTimestampsToggle = document.getElementById('show-timestamps');
 const darkModeToggle = document.getElementById('dark-mode');
 const personalitySelect = document.getElementById('personality-select');
 const colorOptions = document.querySelectorAll('.color-option');
+const useOpenAIToggle = document.getElementById('use-openai');
 
 // Default settings
 const defaultSettings = {
@@ -25,7 +26,8 @@ const defaultSettings = {
     primaryColor: '#ff6b9d',
     showTimestamps: false,
     darkMode: false,
-    personality: 'abg'
+    personality: 'abg',
+    useOpenAI: true  // Add this line
 };
 
 // Chatbot State
@@ -507,7 +509,6 @@ function loadSettings() {
     applySettings();
 }
 
-// Function to apply current settings to UI
 function applySettings() {
     // Update chatbot name
     chatbotNameElement.textContent = chatbotState.settings.name;
@@ -521,6 +522,7 @@ function applySettings() {
     showTimestampsToggle.checked = chatbotState.settings.showTimestamps;
     darkModeToggle.checked = chatbotState.settings.darkMode;
     personalitySelect.value = chatbotState.settings.personality;
+    useOpenAIToggle.checked = chatbotState.settings.useOpenAI; 
     
     // Update color option selection
     colorOptions.forEach(option => {
@@ -967,6 +969,7 @@ function saveSettingsChanges() {
     chatbotState.settings.showTimestamps = showTimestampsToggle.checked;
     chatbotState.settings.darkMode = darkModeToggle.checked;
     chatbotState.settings.personality = personalitySelect.value;
+    chatbotState.settings.useOpenAI = useOpenAIToggle.checked; 
     
     // Get selected color
     const activeColor = document.querySelector('.color-option.active');
@@ -1120,9 +1123,36 @@ async function sendMessage() {
         // Remove typing indicator
         removeTypingIndicator();
         
-        // Get DialoGPT response
+        // Try OpenAI API first (if enabled)
+        if (chatbotState.settings.useOpenAI) {
+            try {
+                if (typeof getOpenAIResponse === 'function') {
+                    console.log("Attempting to use OpenAI API...");
+                    const openAIResponse = await getOpenAIResponse(
+                        message,
+                        chatbotState.settings.personality,
+                        chatbotState.mood
+                    );
+                    
+                    if (openAIResponse) {
+                        console.log("Successfully got OpenAI response");
+                        // Add AI response to chat
+                        addMessage(openAIResponse, false);
+                        
+                        // Update last response time
+                        chatbotState.lastResponseTime = Date.now();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error("Error with OpenAI response:", error);
+            }
+        }
+        
+        // If OpenAI fails or is disabled, try DialoGPT
         try {
             if (typeof getCachedOrFreshResponse === 'function') {
+                console.log("Falling back to DialoGPT...");
                 const aiResponse = await getCachedOrFreshResponse(
                     message,
                     chatbotState.settings.personality,
@@ -1147,6 +1177,7 @@ async function sendMessage() {
         
         // If DialoGPT fails, fall back to trained responses
         if (typeof getTrainedResponse === 'function') {
+            console.log("Falling back to trained responses...");
             const trainedResponse = getTrainedResponse(
                 message, 
                 chatbotState.settings.personality, 
@@ -1163,6 +1194,7 @@ async function sendMessage() {
         }
         
         // As a last resort, use template responses
+        console.log("Using template response as final fallback");
         const templateResponse = getAIResponse(message);
         addMessage(templateResponse);
         

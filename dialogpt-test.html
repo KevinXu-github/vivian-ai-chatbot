@@ -3,357 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DialoGPT API Test</title>
+    <title>DialoGPT Basic Test</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        #results { background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
-        .success { color: green; }
-        .error { color: red; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        textarea, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
-        button { padding: 10px 20px; background: #ff6b9d; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #ff4b8d; }
-        .chat-history { background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 5px; margin-bottom: 20px; max-height: 200px; overflow-y: auto; }
-        .message { margin-bottom: 10px; padding: 8px; border-radius: 5px; }
-        .user-message { background: #e1f5fe; text-align: right; }
-        .bot-message { background: #f5f5f5; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #conversation-history {
+            border: 1px solid #ccc;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .user-message {
+            background-color: #e6f7ff;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            margin-left: auto;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        #user-message {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #send-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #reset-button {
+            background-color: #f44336;
+            color: white;
+        }
+        #loading-indicator {
+            display: none;
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>DialoGPT API Test</h1>
+    <h1>DialoGPT Basic Conversation Test</h1>
+    <p>This page tests basic conversation capabilities of DialoGPT without any styling or personality.</p>
     
-    <div class="form-group">
-        <label for="personalitySelect">Personality:</label>
-        <select id="personalitySelect">
-            <option value="abg">ABG (Asian Baby Girl)</option>
-            <option value="cute">Cute &amp; Sweet</option>
-            <option value="sassy">Sassy &amp; Bold</option>
-        </select>
+    <div id="conversation-history"></div>
+    
+    <div class="input-area">
+        <input id="user-message" type="text" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+        <button id="reset-button">Reset</button>
     </div>
     
-    <div class="form-group">
-        <label for="moodSelect">Mood:</label>
-        <select id="moodSelect">
-            <option value="neutral">Neutral</option>
-            <option value="happy">Happy</option>
-            <option value="sad">Sad</option>
-        </select>
-    </div>
-    
-    <div class="chat-history" id="chatHistory">
-        <!-- Chat messages will appear here -->
-    </div>
-    
-    <div class="form-group">
-        <label for="userMessage">Your Message:</label>
-        <textarea id="userMessage" rows="3" placeholder="Type a message to test...">hi there</textarea>
-    </div>
-    
-    <button id="sendButton">Send Message</button>
-    <button id="resetButton">Reset Conversation</button>
-    
-    <h3>Results:</h3>
-    <div id="results">Results will appear here...</div>
+    <div id="loading-indicator">DialoGPT is thinking...</div>
     
     <script>
-        // Conversation history for display
-        const displayHistory = [];
+        // Store conversation history
+        let conversationHistory = {
+            past_user_inputs: [],
+            generated_responses: []
+        };
         
-        // When page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.textContent = "Ready to test! Send a message to start the conversation.\n";
-            resultsDiv.textContent += "Note: Make sure your server is running first!\n";
-            console.log("DialoGPT test page loaded");
-        });
+        // Maximum history to keep
+        const MAX_HISTORY_LENGTH = 5;
         
-        // Send message button
-        document.getElementById('sendButton').addEventListener('click', async () => {
-            await sendMessage();
-        });
+        // Reset conversation history
+        function resetConversation() {
+            conversationHistory = {
+                past_user_inputs: [],
+                generated_responses: []
+            };
+            console.log("Conversation history reset");
+            document.getElementById('conversation-history').innerHTML = '';
+        }
         
-        // Reset conversation button
-        document.getElementById('resetButton').addEventListener('click', () => {
-            resetConversation();
-        });
-        
-        // Also allow Enter key to send
-        document.getElementById('userMessage').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-        
-        // Send message function
-        async function sendMessage() {
-            const resultsDiv = document.getElementById('results');
-            const userMessageInput = document.getElementById('userMessage');
-            const userMessage = userMessageInput.value.trim();
-            const personality = document.getElementById('personalitySelect').value;
-            const mood = document.getElementById('moodSelect').value;
-            
-            if (!userMessage) {
-                return;
-            }
-            
-            // Add to display history
-            displayHistory.push({ isUser: true, text: userMessage });
-            updateChatDisplay();
-            
-            // Clear input field
-            userMessageInput.value = '';
-            
-            resultsDiv.textContent = "Sending message to DialoGPT...\n";
-            resultsDiv.textContent += `Message: "${userMessage}"\n`;
-            resultsDiv.textContent += `Personality: ${personality}\n`;
-            resultsDiv.textContent += `Mood: ${mood}\n\n`;
-            
+        // Get response from DialoGPT while maintaining conversation context
+        async function getDialoGPTResponse(userMessage) {
             try {
-                // Make API request
+                console.log("Getting DialoGPT response for:", userMessage);
+                console.log("Current conversation history:", conversationHistory);
+                
+                // Create a clean request with proper conversation history
+                const request = {
+                    model: "microsoft/DialoGPT-medium", // Medium model is more reliable
+                    inputs: {
+                        text: userMessage,
+                        past_user_inputs: conversationHistory.past_user_inputs,
+                        generated_responses: conversationHistory.generated_responses
+                    },
+                    parameters: {
+                        max_length: 100,
+                        temperature: 0.7,
+                        top_p: 0.92,
+                        return_full_text: false
+                    }
+                };
+                
+                console.log("Sending request:", JSON.stringify(request));
+                
+                // Use the proxy endpoint
                 const response = await fetch('/api/huggingface', {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        model: "microsoft/DialoGPT-large",
-                        inputs: {
-                            // Add personality prompt
-                            text: getPersonalityPrompt(personality, mood) + " " + userMessage,
-                            past_user_inputs: displayHistory.filter(m => m.isUser).slice(-5).map(m => m.text),
-                            generated_responses: displayHistory.filter(m => !m.isUser).slice(-5).map(m => m.text)
-                        },
-                        parameters: {
-                            max_length: 100,
-                            temperature: 0.7,
-                            top_p: 0.92,
-                            return_full_text: false
-                        }
-                    }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(request)
                 });
                 
+                // Check for error response
                 if (!response.ok) {
-                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                    console.error(`API error (${response.status}):`, await response.text());
+                    return "Sorry, I'm having trouble connecting. Can you try again?";
                 }
                 
                 const data = await response.json();
-                resultsDiv.textContent += "API Response:\n" + JSON.stringify(data, null, 2) + "\n\n";
+                console.log("Raw response data:", data);
                 
-                // Extract the response
-                let botResponse = "";
+                // Extract the response text
+                let responseText = "";
                 
                 if (data && data.generated_text) {
-                    botResponse = data.generated_text.trim();
+                    responseText = data.generated_text.trim();
                 } else if (data && Array.isArray(data) && data[0] && data[0].generated_text) {
-                    botResponse = data[0].generated_text.trim();
+                    responseText = data[0].generated_text.trim();
                 } else {
-                    // Fallback response if we can't extract from data
-                    botResponse = getFallbackResponse(personality, mood);
+                    console.error("Unexpected response format:", data);
+                    return "I didn't understand that. Can you rephrase?";
                 }
                 
-                // Format the response
-                botResponse = formatResponse(botResponse, personality, mood);
+                // Clean up any artifacts from the response
+                responseText = responseText.replace(/^You: .*?\n/, '').trim();
                 
-                // Add to display history
-                displayHistory.push({ isUser: false, text: botResponse });
-                updateChatDisplay();
+                // Update conversation history
+                conversationHistory.past_user_inputs.push(userMessage);
+                conversationHistory.generated_responses.push(responseText);
                 
-                resultsDiv.textContent += "Bot Response: " + botResponse;
+                // Keep history within limits
+                if (conversationHistory.past_user_inputs.length > MAX_HISTORY_LENGTH) {
+                    conversationHistory.past_user_inputs = conversationHistory.past_user_inputs.slice(-MAX_HISTORY_LENGTH);
+                    conversationHistory.generated_responses = conversationHistory.generated_responses.slice(-MAX_HISTORY_LENGTH);
+                }
                 
+                return responseText;
             } catch (error) {
-                console.error("Error:", error);
-                resultsDiv.textContent += `Error: ${error.message}\n`;
+                console.error("Error getting DialoGPT response:", error);
+                return "Sorry, something went wrong. Please try again.";
+            }
+        }
+        
+        // Add a message to the conversation history UI
+        function addMessageToUI(message, isUser) {
+            const historyElement = document.getElementById('conversation-history');
+            const messageElement = document.createElement('div');
+            messageElement.className = isUser ? 'user-message' : 'bot-message';
+            messageElement.textContent = message;
+            historyElement.appendChild(messageElement);
+            historyElement.scrollTop = historyElement.scrollHeight;
+        }
+        
+        // Handle send button click
+        document.getElementById('send-button').addEventListener('click', async () => {
+            const userMessage = document.getElementById('user-message').value.trim();
+            if (!userMessage) return;
+            
+            // Add user message to UI
+            addMessageToUI(userMessage, true);
+            
+            // Clear input
+            document.getElementById('user-message').value = '';
+            
+            // Show loading indicator
+            document.getElementById('loading-indicator').style.display = 'block';
+            
+            try {
+                // Get response
+                const response = await getDialoGPTResponse(userMessage);
                 
-                // Generate fallback response
-                const fallbackResponse = getFallbackResponse(personality, mood);
-                displayHistory.push({ isUser: false, text: fallbackResponse });
-                updateChatDisplay();
-                
-                resultsDiv.textContent += "\nFalling back to template response: " + fallbackResponse;
+                // Add response to UI
+                addMessageToUI(response, false);
+            } catch (error) {
+                console.error("Error in conversation:", error);
+                addMessageToUI("Error: " + error.message, false);
+            } finally {
+                // Hide loading indicator
+                document.getElementById('loading-indicator').style.display = 'none';
             }
-        }
+        });
         
-        // Update chat display
-        function updateChatDisplay() {
-            const chatHistoryDiv = document.getElementById('chatHistory');
-            chatHistoryDiv.innerHTML = '';
-            
-            displayHistory.forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = message.isUser ? 'message user-message' : 'message bot-message';
-                messageDiv.textContent = message.isUser ? 'You: ' + message.text : 'Bot: ' + message.text;
-                chatHistoryDiv.appendChild(messageDiv);
-            });
-            
-            // Scroll to bottom
-            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
-        }
+        // Handle reset button click
+        document.getElementById('reset-button').addEventListener('click', resetConversation);
         
-        // Reset conversation
-        function resetConversation() {
-            displayHistory.length = 0;
-            updateChatDisplay();
-            
-            // If dialogpt-api.js is loaded, reset its history too
-            if (typeof resetConversationHistory === 'function') {
-                resetConversationHistory();
+        // Handle enter key press
+        document.getElementById('user-message').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('send-button').click();
             }
-            
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.textContent = "Conversation reset. Ready for new messages.";
-        }
-        
-        // Helper functions
-        function getPersonalityPrompt(personality, mood) {
-            if (personality === "abg") {
-                if (mood === "happy") {
-                    return "Respond as an excited Asian Baby Girl (ABG). Be enthusiastic, use words like 'literally', 'omg', 'bestie', 'slay'.";
-                } 
-                else if (mood === "sad") {
-                    return "Respond as a moody Asian Baby Girl (ABG). Be dismissive, use words like 'ugh', 'whatever', 'tbh'.";
-                } 
-                else { // neutral
-                    return "Respond as a casual Asian Baby Girl (ABG). Be laid-back, use phrases like 'vibes', 'bestie'.";
-                }
-            } 
-            else if (personality === "cute") {
-                if (mood === "happy") {
-                    return "Respond as a bubbly, cute girl. Use expressions like 'hehe~' and make your response adorable.";
-                } 
-                else if (mood === "sad") {
-                    return "Respond as a sad but cute girl. Use gentle, melancholy expressions and sad emoticons.";
-                } 
-                else { // neutral
-                    return "Respond as a sweet, gentle girl. Be kind and slightly shy in your response.";
-                }
-            } 
-            else if (personality === "sassy") {
-                if (mood === "happy") {
-                    return "Respond as a confident, sassy girl in a good mood. Be bold and witty with confident energy.";
-                } 
-                else if (mood === "sad") {
-                    return "Respond as a sassy but annoyed girl. Be sarcastic and show your irritation.";
-                } 
-                else { // neutral
-                    return "Respond as a sassy, confident girl. Be clever and slightly teasing with playful arrogance.";
-                }
-            }
-            
-            return "";
-        }
-        
-        function formatResponse(response, personality, mood) {
-            // Limit length
-            if (response.length > 100) {
-                response = response.substring(0, 100);
-            }
-            
-            // Clean up model artifacts
-            response = response.replace(/^You: .*?\n/, '');
-            
-            // Add personality-specific expressions if needed
-            if (personality === "abg") {
-                if (mood === "happy" && !containsAnyOf(response, ['omg', 'literally', 'bestie', 'slay'])) {
-                    response += " Literally obsessed!";
-                } 
-                else if (mood === "sad" && !containsAnyOf(response, ['ugh', 'whatever', 'tbh'])) {
-                    response += " Whatever tbh.";
-                }
-            } 
-            else if (personality === "cute") {
-                if (mood === "happy" && !response.includes('~')) {
-                    response += " Hehe~";
-                } 
-                else if (mood === "sad" && !containsAnyOf(response, ['(', ')', ':'])) {
-                    response += " (◞‸◟)";
-                }
-            }
-            
-            return response;
-        }
-        
-        function containsAnyOf(text, terms) {
-            return terms.some(term => text.toLowerCase().includes(term.toLowerCase()));
-        }
-        
-        function getFallbackResponse(personality, mood) {
-            if (personality === "abg") {
-                if (mood === "happy") {
-                    const responses = [
-                        "Omg bestie, I'm literally so obsessed with that! Vibes are immaculate!",
-                        "That's such a slay! I'm totally here for it!",
-                        "Yesss! That's the energy I'm looking for today! Love it!"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else if (mood === "sad") {
-                    const responses = [
-                        "Ugh, whatever. Not really in the mood tbh.",
-                        "That's kinda basic, ngl. Not feeling it today.",
-                        "Hmm, I guess. Not like I care that much rn."
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else {
-                    const responses = [
-                        "That's lowkey interesting. Might vibe with it later.",
-                        "I mean, it's cool. Boba tea and chill?",
-                        "Hmm, not bad. But like, have you tried the new boba shop downtown?"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                }
-            }
-            else if (personality === "cute") {
-                if (mood === "happy") {
-                    const responses = [
-                        "Aww, that's super duper amazing! *happy dance* ♡(ᐢ ᴥ ᐢ)",
-                        "Hehe~ You just made my day so much brighter! ✨",
-                        "That's the cutest thing ever! You're amazing! (*^▽^*)"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else if (mood === "sad") {
-                    const responses = [
-                        "Oh no... that makes me feel a bit sad... (◞‸◟)",
-                        "I don't like feeling sad... Can we talk about something else? ಥ_ಥ",
-                        "That's a bit gloomy... Can we find something to smile about?"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else {
-                    const responses = [
-                        "Hmm, that's interesting! *tilts head curiously*",
-                        "Okie dokie! Tell me more, please? (*ᴗ͈ˬᴗ͈)ꕤ",
-                        "I'd love to hear more about that! ♡( ◡‿◡ )"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                }
-            }
-            else if (personality === "sassy") {
-                if (mood === "happy") {
-                    const responses = [
-                        "Well, look who just brightened my digital day!",
-                        "Finally, something worth my processing power!",
-                        "Honey, you're speaking my language now!"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else if (mood === "sad") {
-                    const responses = [
-                        "Ugh, way to bring down the mood. Can we not?",
-                        "I'm going to pretend I didn't hear that depressing comment.",
-                        "Hard pass on this sad talk. I have a reputation to maintain."
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                } else {
-                    const responses = [
-                        "Interesting... continue. I'm partially intrigued.",
-                        "Is there more to that story or...?",
-                        "Sure, whatever. What else you got?"
-                    ];
-                    return responses[Math.floor(Math.random() * responses.length)];
-                }
-            }
-            
-            return "I see. Tell me more.";
-        }
+        });
     </script>
 </body>
 </html>
