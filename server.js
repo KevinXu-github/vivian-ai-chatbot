@@ -57,7 +57,7 @@ app.post('/api/openai', async (req, res) => {
     
     // Create completion
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // You can use "gpt-4o" if needed
+      model: "gpt-4o-mini",
       messages: messages,
       max_tokens: 150,
       temperature: 0.7,
