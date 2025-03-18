@@ -1068,7 +1068,14 @@ function updateMoodDisplay(mood) {
     console.log("Updating mood CSS classes");
     avatarMainContainer.classList.remove('mood-happy', 'mood-neutral', 'mood-sad');
     avatarMainContainer.classList.add(`mood-${mood}`);
+    
+    // Notify verification system of mood change
+    if (typeof window.notifyMoodChange === 'function') {
+        window.notifyMoodChange(mood);
+    }
 }
+
+// Find this part in your app.js file, specifically in the sendMessage function:
 
 // Function to handle sending a message
 async function sendMessage() {
@@ -1081,20 +1088,6 @@ async function sendMessage() {
         clearChatHistory();
         userInput.value = '';
         return;
-    }
-    
-    // Process training commands if available
-    if (typeof processTrainingCommand === 'function') {
-        const commandResult = processTrainingCommand(message);
-        if (commandResult.isCommand) {
-            // Add user message to chat
-            addMessage(message, true);
-            // Clear input field
-            userInput.value = '';
-            // Add Vivian's response to the command
-            addMessage(commandResult.response, false);
-            return;
-        }
     }
     
     // IMPORTANT: Determine mood BEFORE adding the user message
@@ -1115,6 +1108,43 @@ async function sendMessage() {
     
     // Show typing indicator
     showTypingIndicator();
+    
+    // Update happiness verification if needed
+    if (!isUserVerified() && isVerificationInProgress()) {
+        const verificationResult = processVerificationResponse(message);
+        
+        // Just continue with regular processing, don't show any special verification message
+        // The happiness meter will still update in the background
+    }
+    
+    // Process the regular chatbot response
+    await processRegularMessage(message);
+}
+
+// You'll also need to modify your initialization code, find something like this:
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    loadMessageHistory();
+    updateMoodDisplay(chatbotState.mood);
+    userInput.focus();
+    
+    // Start verification silently without showing a message
+    if (typeof startVerification === 'function') {
+        startVerification();
+    }
+});
+
+// Helper function to process regular (non-verification) messages
+async function processRegularMessage(message) {
+    // IMPORTANT: Determine mood BEFORE adding the user message
+    const newMood = determineMood(message);
+    console.log(`Message: "${message}" detected mood: ${newMood}`);
+    
+    // Update chatbot state
+    chatbotState.mood = newMood;
+    
+    // Update mood display immediately
+    updateMoodDisplay(newMood);
     
     // Add a delay to simulate thinking
     const thinkingTime = 1000 + Math.random() * 1000; // 1-2 seconds
@@ -1175,33 +1205,39 @@ async function sendMessage() {
             console.error("Error with DialoGPT response:", error);
         }
         
-        // If DialoGPT fails, fall back to trained responses
-        if (typeof getTrainedResponse === 'function') {
-            console.log("Falling back to trained responses...");
-            const trainedResponse = getTrainedResponse(
-                message, 
-                chatbotState.settings.personality, 
-                chatbotState.mood
-            );
-            
-            if (trainedResponse) {
-                addMessage(trainedResponse.text, false);
-                
-                // Update last response time
-                chatbotState.lastResponseTime = Date.now();
-                return;
-            }
-        }
-        
         // As a last resort, use template responses
         console.log("Using template response as final fallback");
         const templateResponse = getAIResponse(message);
-        addMessage(templateResponse);
+        addMessage(templateResponse, false);
         
         // Update last response time
         chatbotState.lastResponseTime = Date.now();
     }, thinkingTime);
 }
+
+// Add these event listeners for typing pattern analysis
+userInput.addEventListener('keydown', (e) => {
+    if (isVerificationInProgress()) {
+        addTypingEvent(e);
+    }
+});
+
+userInput.addEventListener('focus', (e) => {
+    if (isVerificationInProgress()) {
+        startTypingTracking();
+    }
+});
+
+// Initialize verification state when the page loads
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    loadMessageHistory();
+    updateMoodDisplay(chatbotState.mood);
+    userInput.focus();
+    
+    // Reset verification state when starting a new session
+    resetVerification();
+});
 
 // Event Listeners
 sendBtn.addEventListener('click', sendMessage);

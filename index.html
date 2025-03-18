@@ -6,196 +6,187 @@
     <title>Vivian AI Chatbot</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      .verification-notification {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        max-width: 400px;
+        margin: 0 auto 15px auto;
+        position: relative;
+        z-index: 10;
+      }
+      
+      .verification-notification p {
+        margin: 0 0 8px 0;
+        font-weight: 500;
+      }
+      
+      .happiness-meter {
+        background-color: rgba(255,255,255,0.3);
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      
+      .happiness-progress {
+        background-color: white;
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Add this to center everything in the page */
+      .page-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <button id="settings-btn" class="settings-btn" title="Settings">
-                <i class="fas fa-cog"></i>
-            </button>
-            <button id="training-btn" class="settings-btn" title="Train Vivian">
-                <i class="fas fa-brain"></i>
-            </button>
-            <h2 id="chatbot-name">Vivian AI</h2>
-            <button id="clear-btn" class="clear-btn" title="Clear chat history">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
-        
-        <div class="avatar-main-container">
-            <div class="avatar-wrapper">
-                <img id="ai-avatar" src="assets/neutral.png" alt="ABG AI Avatar">
-                <div class="avatar-status">
-                    <span id="mood-text">Feeling neutral</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="chat-box" id="chat-box">
-            <!-- Messages will appear here -->
-        </div>
-        
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your message here...">
-            <button id="send-btn">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
+    <div class="page-container">
+      <div id="verification-notification" class="verification-notification">
+          <p><i class="fas fa-user-check"></i> Make Vivian happy to prove you're human!</p>
+          <div class="happiness-meter">
+            <div class="happiness-progress" id="happiness-progress" style="width: 0%"></div>
+          </div>
+      </div>
+      
+      <div class="chat-container">
+          <div class="chat-header">
+              <button id="settings-btn" class="settings-btn" title="Settings">
+                  <i class="fas fa-cog"></i>
+              </button>
+              <h2 id="chatbot-name">Vivian AI</h2>
+              <button id="clear-btn" class="clear-btn" title="Clear chat history">
+                  <i class="fas fa-trash-alt"></i>
+              </button>
+          </div>
+          
+          <div class="avatar-main-container">
+              <div class="avatar-wrapper">
+                  <img id="ai-avatar" src="assets/neutral.png" alt="ABG AI Avatar">
+                  <div class="avatar-status">
+                      <span id="mood-text">Feeling neutral</span>
+                  </div>
+              </div>
+          </div>
+          
+          <div class="chat-box" id="chat-box">
+              <!-- Messages will appear here -->
+          </div>
+          
+          <div class="chat-input">
+              <input type="text" id="user-input" placeholder="Type your message here...">
+              <button id="send-btn">
+                  <i class="fas fa-paper-plane"></i>
+              </button>
+          </div>
+      </div>
 
-    <!-- Settings Panel -->
-    <div class="settings-panel" id="settings-panel">
-        <div class="settings-header">
-            <h3>Customize Vivian</h3>
-            <button id="close-settings" class="close-settings">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="settings-content">
-            <div class="setting-group">
-                <label for="chatbot-name-input">Chatbot Name:</label>
-                <input type="text" id="chatbot-name-input" value="Vivian AI">
-            </div>
-            
-            <div class="setting-group">
-                <label>Theme Color:</label>
-                <div class="color-options">
-                    <button class="color-option" data-color="#ff6b9d" style="background-color: #ff6b9d;"></button>
-                    <button class="color-option" data-color="#6b96ff" style="background-color: #6b96ff;"></button>
-                    <button class="color-option" data-color="#6bff9d" style="background-color: #6bff9d;"></button>
-                    <button class="color-option" data-color="#ff9d6b" style="background-color: #ff9d6b;"></button>
-                    <button class="color-option" data-color="#d36bff" style="background-color: #d36bff;"></button>
-                </div>
-            </div>
-            
-            <div class="setting-group">
-                <label>Personality Type:</label>
-                <select id="personality-select">
-                    <option value="abg">ABG (Asian Baby Girl)</option>
-                    <option value="cute">Cute &amp; Sweet</option>
-                    <option value="sassy">Sassy &amp; Bold</option>
-                </select>
-            </div>
-            
-            <div class="setting-group toggle-group">
-                <label for="show-timestamps">Show Message Timestamps:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="show-timestamps">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            
-            <div class="setting-group toggle-group">
-                <label for="dark-mode">Dark Mode:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="dark-mode">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            
-            <div class="setting-group toggle-group">
-                <label for="use-openai">Use OpenAI API:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="use-openai" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            
-            <div class="settings-footer">
-                <button id="save-settings" class="btn save-btn">Save Changes</button>
-                <button id="reset-settings" class="btn reset-btn">Reset to Default</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Training Panel -->
-    <div class="settings-panel" id="training-panel">
-        <div class="settings-header">
-            <h3>Train Vivian</h3>
-            <button id="close-training" class="close-settings">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="settings-content">
-            <div class="training-instructions">
-                <p>Teach Vivian how to respond to specific messages. Every pattern you teach will be associated with the current personality and mood.</p>
-            </div>
-            
-            <div class="setting-group">
-                <label for="pattern-input">When someone says:</label>
-                <input type="text" id="pattern-input" placeholder="e.g., How are you feeling today?">
-            </div>
-            
-            <div class="setting-group">
-                <label for="response-input">Vivian should respond with:</label>
-                <textarea id="response-input" rows="3" placeholder="e.g., I'm feeling amazing today, bestie! How about you?"></textarea>
-                <button id="add-response-btn" class="btn small-btn">+ Add Another Response</button>
-                <div id="additional-responses"></div>
-            </div>
-            
-            <div class="setting-group toggle-group">
-                <label for="current-mood-toggle">Use current mood:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="current-mood-toggle" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            
-            <div id="mood-selector" class="setting-group" style="display: none;">
-                <label>Select mood for this response:</label>
-                <select id="mood-select">
-                    <option value="neutral">Neutral</option>
-                    <option value="happy">Happy</option>
-                    <option value="sad">Sad</option>
-                </select>
-            </div>
-            
-            <div class="settings-footer">
-                <button id="save-training" class="btn save-btn">Save Training</button>
-            </div>
-            
-            <div class="setting-divider"></div>
-            
-            <div class="setting-group">
-                <label>Bulk Training with CSV:</label>
-                <div class="training-actions">
-                    <button id="import-csv-btn" class="btn action-btn">Import CSV</button>
-                    <button id="export-csv-btn" class="btn action-btn">Export as CSV</button>
-                    <button id="csv-template-btn" class="btn action-btn">Get CSV Template</button>
-                </div>
-                <div class="csv-info">
-                    <p><small>CSV must have columns: pattern, response, personality, mood</small></p>
-                </div>
-            </div>
-            
-            <div class="setting-divider"></div>
-            
-            <div class="setting-group">
-                <label>Manage Training Data:</label>
-                <div class="training-actions">
-                    <button id="view-patterns-btn" class="btn action-btn">View Patterns</button>
-                    <button id="export-training-btn" class="btn action-btn">Export Data</button>
-                    <button id="import-training-btn" class="btn action-btn">Import Data</button>
-                    <button id="clear-training-btn" class="btn action-btn danger-btn">Reset All Training</button>
-                </div>
-            </div>
-            
-            <div id="patterns-list" class="patterns-container" style="display: none;">
-                <h4>Trained Patterns:</h4>
-                <div class="patterns-list-content"></div>
-            </div>
-        </div>
+      <!-- Settings Panel -->
+      <div class="settings-panel" id="settings-panel">
+          <div class="settings-header">
+              <h3>Customize Vivian</h3>
+              <button id="close-settings" class="close-settings">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          <div class="settings-content">
+              <div class="setting-group">
+                  <label for="chatbot-name-input">Chatbot Name:</label>
+                  <input type="text" id="chatbot-name-input" value="Vivian AI">
+              </div>
+              
+              <div class="setting-group">
+                  <label>Theme Color:</label>
+                  <div class="color-options">
+                      <button class="color-option" data-color="#ff6b9d" style="background-color: #ff6b9d;"></button>
+                      <button class="color-option" data-color="#6b96ff" style="background-color: #6b96ff;"></button>
+                      <button class="color-option" data-color="#6bff9d" style="background-color: #6bff9d;"></button>
+                      <button class="color-option" data-color="#ff9d6b" style="background-color: #ff9d6b;"></button>
+                      <button class="color-option" data-color="#d36bff" style="background-color: #d36bff;"></button>
+                  </div>
+              </div>
+              
+              <div class="setting-group">
+                  <label>Personality Type:</label>
+                  <select id="personality-select">
+                      <option value="abg">ABG (Asian Baby Girl)</option>
+                      <option value="cute">Cute &amp; Sweet</option>
+                      <option value="sassy">Sassy &amp; Bold</option>
+                  </select>
+              </div>
+              
+              <div class="setting-group toggle-group">
+                  <label for="show-timestamps">Show Message Timestamps:</label>
+                  <label class="toggle-switch">
+                      <input type="checkbox" id="show-timestamps">
+                      <span class="toggle-slider"></span>
+                  </label>
+              </div>
+              
+              <div class="setting-group toggle-group">
+                  <label for="dark-mode">Dark Mode:</label>
+                  <label class="toggle-switch">
+                      <input type="checkbox" id="dark-mode">
+                      <span class="toggle-slider"></span>
+                  </label>
+              </div>
+              
+              <div class="setting-group toggle-group">
+                  <label for="use-openai">Use OpenAI API:</label>
+                  <label class="toggle-switch">
+                      <input type="checkbox" id="use-openai" checked>
+                      <span class="toggle-slider"></span>
+                  </label>
+              </div>
+              
+              <div class="settings-footer">
+                  <button id="save-settings" class="btn save-btn">Save Changes</button>
+                  <button id="reset-settings" class="btn reset-btn">Reset to Default</button>
+              </div>
+          </div>
+      </div>
     </div>
     
     <!-- Settings Overlay -->
     <div class="settings-overlay" id="settings-overlay"></div>
 
+    <!-- Define verification functions inline to avoid errors -->
+    <script>
+    // Basic verification stubs in case happiness-verification.js doesn't load properly
+    window.resetVerification = window.resetVerification || function() {
+      console.log("Verification reset");
+    };
+    window.isUserVerified = window.isUserVerified || function() { 
+      return true; 
+    };
+    window.isVerificationInProgress = window.isVerificationInProgress || function() { 
+      return false; 
+    };
+    window.startVerification = window.startVerification || function() {
+      return "Make me happy to prove you're human!";
+    };
+    window.processVerificationResponse = window.processVerificationResponse || function() {
+      return { isValidating: false };
+    };
+    window.startTypingTracking = window.startTypingTracking || function() {};
+    window.addTypingEvent = window.addTypingEvent || function() {};
+    window.notifyMoodChange = window.notifyMoodChange || function() { return true; };
+    </script>
+    
+    <!-- Load scripts in proper order -->
+    <script src="happiness-verification.js"></script>
     <script src="app.js"></script>
-    <script src="api-config.js"></script>
-    <script src="api.js"></script>
-    <script src="training.js"></script>
-    <script src="csv-training.js"></script>
-    <script src="training-ui.js"></script>
     <script src="openai-api.js"></script>
 </body>
 </html>
