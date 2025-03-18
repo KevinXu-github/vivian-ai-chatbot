@@ -11,7 +11,9 @@ window.verificationState = {
   happinessThreshold: 3, // Need this many happiness points to verify
   verificationMsg: "Make me happy to prove you're human! Try compliments, jokes, or positive conversation.",
   messageHistory: [],
-  previousMood: null // Track previous mood to detect changes
+  previousMood: null, // Track previous mood to detect changes
+  lastHappinessUpdate: 0, // Timestamp of last happiness update to prevent duplicates
+  pendingPointAward: false // Flag to track if a point is pending award
 };
 
 // Start verification process
@@ -21,9 +23,17 @@ function startVerification() {
   verificationState.happinessLevel = 0;
   verificationState.attemptCount = 0;
   verificationState.previousMood = null;
+  verificationState.lastHappinessUpdate = 0;
+  verificationState.pendingPointAward = false;
   
   // Add notification element if it doesn't exist
   updateHappinessIndicator();
+  
+  console.log("Verification started. Initial state:", JSON.stringify({
+    happinessLevel: verificationState.happinessLevel,
+    threshold: verificationState.happinessThreshold,
+    pendingVerification: verificationState.pendingVerification
+  }));
   
   return verificationState.verificationMsg;
 }
@@ -37,9 +47,40 @@ function updateHappinessIndicator() {
   }
 }
 
+// ★ IMPORTANT: This is now the ONLY function that should update happiness level ★
+function awardHappinessPoint() {
+  // Prevent duplicate awards within a short time period (1 second debounce)
+  const now = Date.now();
+  if (now - verificationState.lastHappinessUpdate < 1000) {
+    console.log("Debouncing happiness point award - too soon after last award");
+    return false;
+  }
+  
+  // Update happiness level
+  verificationState.happinessLevel += 1;
+  verificationState.lastHappinessUpdate = now;
+  verificationState.pendingPointAward = false;
+  
+  console.log("⭐ HAPPINESS POINT AWARDED! New level:", verificationState.happinessLevel);
+  
+  // Update the UI
+  updateHappinessIndicator();
+  
+  // Check if verification threshold reached
+  if (verificationState.happinessLevel >= verificationState.happinessThreshold) {
+    verificationState.isVerified = true;
+    verificationState.pendingVerification = false;
+    console.log("✅ Verification successful!");
+  }
+  
+  return true;
+}
+
 // Process a user response for verification
 function processVerificationResponse(message) {
   if (!verificationState.pendingVerification) return { isValidating: false };
+  
+  console.log("Processing verification response for message:", message);
   
   // Add to message history
   verificationState.messageHistory.push({
@@ -48,16 +89,17 @@ function processVerificationResponse(message) {
   });
   
   // Check if the message made Vivian happy
-  // We'll use the chatbot's mood state which is updated in app.js
   const chatbotMood = window.chatbotState ? window.chatbotState.mood : 'neutral';
-  let points = 0;
   let response = "";
   
-  // Award points if the chatbot is happy
+  console.log("Current mood:", chatbotMood, "Previous mood:", verificationState.previousMood);
+  
+  // IMPORTANT: Do NOT award points here directly!
+  // Instead, set a flag for notifyMoodChange to handle
   if (chatbotMood === 'happy' && verificationState.previousMood !== 'happy') {
-    points = 1;
+    console.log("Happy mood detected during verification response processing");
+    verificationState.pendingPointAward = true;
     response = "Yay! You're making me happy! Keep going!";
-    console.log("Awarding point for making Vivian happy");
   } else if (chatbotMood === 'happy') {
     // Already happy, encourage them
     response = "I'm feeling happy! Keep the good vibes coming!";
@@ -65,17 +107,12 @@ function processVerificationResponse(message) {
     response = "I'm not feeling happier yet. Try saying something nice or fun!";
   }
   
-  // Store current mood for next comparison
-  verificationState.previousMood = chatbotMood;
-  
-  // Update happiness level
-  verificationState.happinessLevel += points;
+  // Update verification status
   verificationState.attemptCount++;
   
-  // Update the happiness indicator
-  updateHappinessIndicator();
-  
-  console.log("Happiness level:", verificationState.happinessLevel, "Threshold:", verificationState.happinessThreshold, "Mood:", chatbotMood);
+  console.log("After processing - Happiness level:", verificationState.happinessLevel, 
+              "Attempts:", verificationState.attemptCount, 
+              "Pending award:", verificationState.pendingPointAward);
   
   // Check if user has made Vivian happy enough
   if (verificationState.happinessLevel >= verificationState.happinessThreshold) {
@@ -102,12 +139,15 @@ function processVerificationResponse(message) {
     };
   }
   
+  // Store current mood for next comparison - but don't overwrite it if
+  // notifyMoodChange has already been called (racing condition)
+  if (!verificationState.pendingPointAward) {
+    verificationState.previousMood = chatbotMood;
+  }
+  
   // Give feedback based on current progress
-  if (points > 0) {
-    // If they're getting close to the threshold
-    if (verificationState.happinessThreshold - verificationState.happinessLevel <= 1) {
-      response += " You're almost there! Keep going!";
-    }
+  if (verificationState.happinessThreshold - verificationState.happinessLevel <= 1) {
+    response += " You're almost there! Keep going!";
   }
   
   return {
@@ -118,31 +158,29 @@ function processVerificationResponse(message) {
   };
 }
 
+// This gets called from app.js's updateMoodDisplay function
 function notifyMoodChange(mood) {
-  console.log("Mood change notification received:", mood);
+  console.log("📣 Mood change notification received:", mood, 
+              "Previous mood:", verificationState.previousMood,
+              "Pending verification:", verificationState.pendingVerification);
   
-  if (window.verificationState.pendingVerification && !window.verificationState.isVerified) {
+  if (verificationState.pendingVerification && !verificationState.isVerified) {
     // Award a point for making Vivian happy
-    if (mood === 'happy' && window.verificationState.previousMood !== 'happy') {
-      window.verificationState.happinessLevel += 1;
-      console.log("Happiness point awarded! New level:", window.verificationState.happinessLevel);
-      
-      // Update happiness indicator
-      updateHappinessIndicator();
-      
-      // Check if threshold reached
-      if (window.verificationState.happinessLevel >= window.verificationState.happinessThreshold) {
-        window.verificationState.isVerified = true;
-        window.verificationState.pendingVerification = false;
-        console.log("Verification successful!");
-      }
+    if (mood === 'happy' && verificationState.previousMood !== 'happy') {
+      console.log("Happy mood change detected! Awarding point...");
+      // Use the centralized point awarding function
+      awardHappinessPoint();
+    } else if (verificationState.pendingPointAward && mood === 'happy') {
+      // Handle the case where processVerificationResponse detected happiness first
+      console.log("Processing pending happiness point award...");
+      awardHappinessPoint();
     }
     
     // Update previous mood
-    window.verificationState.previousMood = mood;
+    verificationState.previousMood = mood;
   }
   
-  return window.verificationState.isVerified;
+  return verificationState.isVerified;
 }
 
 // Check if user is verified
@@ -164,9 +202,13 @@ function resetVerification() {
   verificationState.attemptCount = 0;
   verificationState.messageHistory = [];
   verificationState.previousMood = null;
+  verificationState.lastHappinessUpdate = 0;
+  verificationState.pendingPointAward = false;
   
   // Reset progress bar
   updateHappinessIndicator();
+  
+  console.log("Verification reset to initial state");
 }
 
 // Stub functions to maintain compatibility with existing code

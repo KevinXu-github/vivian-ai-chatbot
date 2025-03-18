@@ -1075,8 +1075,6 @@ function updateMoodDisplay(mood) {
     }
 }
 
-// Find this part in your app.js file, specifically in the sendMessage function:
-
 // Function to handle sending a message
 async function sendMessage() {
     const message = userInput.value.trim();
@@ -1090,15 +1088,15 @@ async function sendMessage() {
         return;
     }
     
-    // IMPORTANT: Determine mood BEFORE adding the user message
+    // IMPORTANT: Grab the current mood before determining the new mood
+    const previousMood = chatbotState.mood;
+    
+    // Determine mood BEFORE adding the user message
     const newMood = determineMood(message);
-    console.log(`Message: "${message}" detected mood: ${newMood}`);
+    console.log(`Message: "${message}" | Previous mood: ${previousMood} | New detected mood: ${newMood}`);
     
     // Update chatbot state
     chatbotState.mood = newMood;
-    
-    // Update mood display immediately
-    updateMoodDisplay(newMood);
     
     // Add user message to chat
     addMessage(message, true);
@@ -1109,16 +1107,67 @@ async function sendMessage() {
     // Show typing indicator
     showTypingIndicator();
     
-    // Update happiness verification if needed
-    if (!isUserVerified() && isVerificationInProgress()) {
-        const verificationResult = processVerificationResponse(message);
-        
-        // Just continue with regular processing, don't show any special verification message
-        // The happiness meter will still update in the background
+    // Update verification if needed - only call this ONCE per message
+    if (isVerificationInProgress()) {
+        console.log("Verification in progress - processing response");
+        processVerificationResponse(message);
     }
+    
+    // Update mood display - this will trigger notifyMoodChange internally
+    // which is now our single source of truth for happiness points
+    updateMoodDisplay(newMood);
     
     // Process the regular chatbot response
     await processRegularMessage(message);
+}
+
+// Function to update the mood display
+function updateMoodDisplay(mood) {
+    console.log(`Updating mood display to: ${mood}`);
+    
+    // Validate mood
+    if (!['happy', 'neutral', 'sad'].includes(mood)) {
+        console.error(`Invalid mood: ${mood}, defaulting to neutral`);
+        mood = 'neutral';
+    }
+    
+    // Update the avatar image with full path validation
+    const avatarPath = avatars[mood];
+    if (!avatarPath) {
+        console.error(`No avatar path for mood: ${mood}`);
+    } else {
+        console.log(`Setting avatar to: ${avatarPath}`);
+        aiAvatar.src = avatarPath;
+    }
+    
+    // Update mood text with error handling
+    try {
+        const phrases = moodPhrases[mood];
+        if (phrases && phrases.length > 0) {
+            const randomIndex = Math.floor(Math.random() * phrases.length);
+            moodText.textContent = phrases[randomIndex];
+        } else {
+            console.error(`No mood phrases for: ${mood}`);
+            moodText.textContent = mood.charAt(0).toUpperCase() + mood.slice(1);
+        }
+    } catch (error) {
+        console.error("Error updating mood text:", error);
+        moodText.textContent = mood;
+    }
+    
+    // Update container class for styling - with more explicit class management
+    console.log("Updating mood CSS classes");
+    avatarMainContainer.classList.remove('mood-happy', 'mood-neutral', 'mood-sad');
+    avatarMainContainer.classList.add(`mood-${mood}`);
+    
+    // Notify verification system of mood change - IMPORTANT: This is where
+    // happiness points are awarded, in a single place
+    if (typeof window.notifyMoodChange === 'function') {
+        console.log("Calling notifyMoodChange with mood:", mood);
+        window.notifyMoodChange(mood);
+    } else {
+        console.warn("notifyMoodChange function not available");
+    }
 }
 
 // You'll also need to modify your initialization code, find something like this:
