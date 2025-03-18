@@ -1,8 +1,7 @@
 // happiness-verification.js - Verify humans by making Vivian happy
-// Simplified version that uses the chatbot's existing mood detection
 
 // Verification state
-const verificationState = {
+window.verificationState = {
   isVerified: false,
   verificationStarted: false,
   pendingVerification: false,
@@ -119,33 +118,33 @@ function processVerificationResponse(message) {
   };
 }
 
-// Public function for app.js to notify of mood changes
 function notifyMoodChange(mood) {
   console.log("Mood change notification received:", mood);
   
-  if (verificationState.pendingVerification && !verificationState.isVerified) {
+  if (window.verificationState.pendingVerification && !window.verificationState.isVerified) {
     // Award a point for making Vivian happy
-    if (mood === 'happy' && verificationState.previousMood !== 'happy') {
-      verificationState.happinessLevel += 1;
-      console.log("Happiness point awarded! New level:", verificationState.happinessLevel);
+    if (mood === 'happy' && window.verificationState.previousMood !== 'happy') {
+      window.verificationState.happinessLevel += 1;
+      console.log("Happiness point awarded! New level:", window.verificationState.happinessLevel);
       
       // Update happiness indicator
       updateHappinessIndicator();
       
       // Check if threshold reached
-      if (verificationState.happinessLevel >= verificationState.happinessThreshold) {
-        verificationState.isVerified = true;
-        verificationState.pendingVerification = false;
+      if (window.verificationState.happinessLevel >= window.verificationState.happinessThreshold) {
+        window.verificationState.isVerified = true;
+        window.verificationState.pendingVerification = false;
         console.log("Verification successful!");
       }
     }
     
     // Update previous mood
-    verificationState.previousMood = mood;
+    window.verificationState.previousMood = mood;
   }
   
-  return verificationState.isVerified;
+  return window.verificationState.isVerified;
 }
+
 // Check if user is verified
 function isUserVerified() {
   return verificationState.isVerified;
