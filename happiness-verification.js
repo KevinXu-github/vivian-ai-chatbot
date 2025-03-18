@@ -182,3 +182,11 @@ window.resetVerification = resetVerification;
 window.startTypingTracking = startTypingTracking;
 window.addTypingEvent = addTypingEvent;
 window.notifyMoodChange = notifyMoodChange; // Add this to make function available to app.js
+
+// Auto-start verification when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+      console.log("Auto-starting verification process");
+      window.startVerification();
+  }, 500); // Short delay to ensure everything else is loaded first
+});
