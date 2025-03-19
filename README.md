@@ -2,7 +2,7 @@
 
 A modern, interactive chatbot with an ABG (Asian Baby Girl) personality built using vanilla JavaScript. The chatbot analyzes message sentiment, responds with personality-appropriate phrases, and changes its avatar based on detected mood.
 
-![ABG AI Chatbot Screenshot](https://via.placeholder.com/800x400?text=ABG+AI+Chatbot)
+![ABG AI Chatbot Screenshot](./screenshots/chatbot-screenshot.png)
 
 ## Features
 
