@@ -2,7 +2,7 @@
 
 This project demonstrates a novel approach to human verification through emotional engagement rather than traditional CAPTCHAs. The ABG (Asian Baby Girl) AI Chatbot verifies users are human by requiring them to elicit positive emotional responses from the chatbot - essentially "making the chatbot happy" to prove they possess human empathy and communication skills.
 
-![ABG AI Chatbot Screenshot](https://via.placeholder.com/800x400?text=ABG+AI+Chatbot)
+![ABG AI Chatbot Screenshot](./screenshots/chatbot-screenshot.png)
 
 ## The Verification System: Core Project Purpose
 
