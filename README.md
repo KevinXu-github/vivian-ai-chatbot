@@ -1,50 +1,36 @@
-# The Empathy Test: A Human Verification Challenge
+# Mia: A Conversational AI Companion
 
-This project demonstrates a novel approach to human verification. Instead of traditional CAPTCHAs, it challenges a user to prove they are human by holding a positive, empathetic conversation with a conversational AI.
+This project features Mia, a conversational AI companion with a dynamic personality. The primary goal is to create a natural, engaging chat experience where the user's conversation directly impacts the AI's mood.
+
+It also includes a unique proof-of-concept for human verification, where users can "pass a test" simply by having a positive conversation and making Mia happy.
 
 ![Chatbot Screenshot](./screenshots/chatbot-screenshot.png)
 
-## The Core Concept: Verification Through Conversation
+## The Core Concept: A Dynamic Personality
 
-This system moves beyond simple puzzle-solving and explores a more natural, engaging verification method. The goal is to "cheer up" an AI that starts the conversation feeling bored or down.
+Mia is designed to feel more like a person than a simple bot. The AI's mood shifts from sad, to neutral, to happy based on the user's input, creating a more realistic and interactive experience.
 
-This approach is designed to:
-- **Feel Natural**: The test is framed as a simple conversation rather than an arbitrary task.
-- **Engage the User**: It encourages positive and thoughtful interaction from the very beginning.
-- **Provide a Unique Challenge**: It requires nuanced communication skills that are difficult for simple bots to simulate.
-- **Teach AI Interaction**: It subtly teaches users how to interact effectively with an emotionally responsive AI.
-
-The core verification logic is handled in `happiness-verification.js`, which tracks emotional state changes and awards points toward successful verification.
+- **Dynamic Mood**: Mia's avatar and responses change in real-time to reflect its emotional state.
+- **Engaging Interaction**: The user is encouraged to have a positive and thoughtful conversation.
+- **Implicit Verification**: The project includes a background verification system that authenticates the user once they've made Mia happy, demonstrating a seamless, CAPTCHA-free alternative.
 
 ## How It Works
 
-The verification process is straightforward and transparent to the user.
-
-1.  **The Challenge**: The user is greeted by an AI assistant who is feeling down. The initial prompt makes the goal clear: cheer the AI up to prove you're human.
-2.  **Emotional Progress**: The system analyzes the user's messages for positive keywords and sentiment.
-3.  **Earning Points**: A "happiness point" is awarded when a user's message causes a positive shift in the AI's mood (e.g., from `sad` to `happy`). This is tracked via a `happinessLevel` that must reach a `happinessThreshold`.
-4.  **Visual Feedback**: A progress bar in the UI shows the user how close they are to passing the test.
-5.  **Passing the Test**: Once the `happinessThreshold` is met, the user is successfully verified.
-
-## Features
-
-- **Dynamic Emotional State**: The AI's mood and avatar change in real-time based on the conversation's tone.
-- **Real-time Verification Progress**: The UI provides instant feedback on the user's progress toward verification.
-- **Conversation-Based Challenge**: The core mechanic relies on natural language and empathy.
-- **Optional OpenAI Integration**: The app can be connected to a backend to provide more dynamic, generative responses via the OpenAI API.
-- **Local Fallback System**: If API connections are unavailable, the chatbot seamlessly falls back to a set of pre-defined responses to ensure a consistent experience.
+1.  **Initial State**: The user is greeted by Mia, who is feeling bored or down.
+2.  **Conversation**: The user chats with Mia. The system analyzes messages for positive keywords and sentiment.
+3.  **Mood Shift**: A positive conversation will improve Mia's mood. When the mood shifts from `sad` or `neutral` to `happy`, a `happinessLevel` point is awarded.
+4.  **Verification**: Once the `happinessThreshold` is met, the user is seamlessly verified in the background.
 
 ## Project Structure
 
 This is the file structure for the project:
-- `empathy-test/`
+- `mia-chatbot/`
   - `assets/`: Contains avatar images for different emotional states.
   - `happiness-verification.js`: Core verification system implementation.
   - `app.js`: Main chatbot logic and mood detection.
   - `index.html`: UI structure with verification components.
   - `openai-api.js`: Optional AI integration for enhanced responses.
   - `server.js`: Node.js server for handling API connections.
-
 
 ## Setup Instructions
 
@@ -57,13 +43,6 @@ This is the file structure for the project:
 ### Full Setup (With AI-Enhanced Responses)
 
 1.  Install Node.js dependencies: `npm install`
-2.  Create a `.env` file in the root directory and add your `OPENAI_API_KEY`.
+2.  Create a `.env` file and add your `OPENAI_API_KEY`.
 3.  Start the server: `npm start`
 4.  Open `http://localhost:3000` in your browser.
-
-## Customization
-
-The verification system can be easily customized:
-- **Difficulty Level**: Adjust the `happinessThreshold` value in `happiness-verification.js` to require more positive interactions.
-- **Mood Keywords**: Modify the `moodKeywords` object in `app.js` to change how the AI detects emotions.
-- **Dialogue**: Change the chatbot's responses in the `personalityResponses` object in `app.js`.
