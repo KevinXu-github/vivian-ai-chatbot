@@ -1,13 +1,18 @@
 {
-  "name": "abg-ai-chatbot",
+  "name": "mia-ai-companion",
   "version": "1.0.0",
-  "description": "A simple, interactive chatbot with an ABG (Asian Baby Girl) personality built using vanilla JavaScript. The chatbot simulates conversations and changes its avatar based on the detected mood.",
-  "main": "api-config.js",
+  "description": "Mia, a conversational AI companion with a dynamic personality that changes based on user interaction.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "chatbot",
+    "ai",
+    "conversational-ai",
+    "verification"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {

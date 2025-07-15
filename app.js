@@ -457,7 +457,7 @@ function clearChatHistory() {
     
     // Add welcome message back
     const welcomeMessage = {
-        text: "Hey bestie! I'm your ABG AI Chatbot~ What's up?",
+        text: "Hey bestie! I'm Mia~ What's up?",
         isUser: false,
         mood: 'neutral',
         timestamp: Date.now()
