@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vivian AI Chatbot</title>
+    <title>EmpathAI - Emotion-Based Human Verification</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -54,7 +54,7 @@
 <body>
     <div class="page-container">
       <div id="verification-notification" class="verification-notification">
-          <p><i class="fas fa-user-check"></i> Make Vivian happy to prove you're human!</p>
+          <p><i class="fas fa-user-check"></i> Make Mia happy to prove you're human!</p>
           <div class="happiness-meter">
             <div class="happiness-progress" id="happiness-progress" style="width: 0%"></div>
           </div>
@@ -65,7 +65,7 @@
               <button id="settings-btn" class="settings-btn" title="Settings">
                   <i class="fas fa-cog"></i>
               </button>
-              <h2 id="chatbot-name">Vivian AI</h2>
+              <h2 id="chatbot-name">Mia</h2>
               <button id="clear-btn" class="clear-btn" title="Clear chat history">
                   <i class="fas fa-trash-alt"></i>
               </button>
@@ -73,9 +73,9 @@
           
           <div class="avatar-main-container">
               <div class="avatar-wrapper">
-                  <img id="ai-avatar" src="assets/neutral.png" alt="ABG AI Avatar">
+                  <img id="ai-avatar" src="assets/neutral.png" alt="AI Assistant Avatar">
                   <div class="avatar-status">
-                      <span id="mood-text">Feeling neutral</span>
+                      <span id="mood-text">Professional</span>
                   </div>
               </div>
           </div>
@@ -95,34 +95,34 @@
       <!-- Settings Panel -->
       <div class="settings-panel" id="settings-panel">
           <div class="settings-header">
-              <h3>Customize Vivian</h3>
+              <h3>Customize Assistant</h3>
               <button id="close-settings" class="close-settings">
                   <i class="fas fa-times"></i>
               </button>
           </div>
           <div class="settings-content">
               <div class="setting-group">
-                  <label for="chatbot-name-input">Chatbot Name:</label>
-                  <input type="text" id="chatbot-name-input" value="Vivian AI">
+                  <label for="chatbot-name-input">Assistant Name:</label>
+                  <input type="text" id="chatbot-name-input" value="Mia">
               </div>
               
               <div class="setting-group">
                   <label>Theme Color:</label>
                   <div class="color-options">
-                      <button class="color-option" data-color="#ff6b9d" style="background-color: #ff6b9d;"></button>
-                      <button class="color-option" data-color="#6b96ff" style="background-color: #6b96ff;"></button>
-                      <button class="color-option" data-color="#6bff9d" style="background-color: #6bff9d;"></button>
-                      <button class="color-option" data-color="#ff9d6b" style="background-color: #ff9d6b;"></button>
-                      <button class="color-option" data-color="#d36bff" style="background-color: #d36bff;"></button>
+                      <button class="color-option" data-color="#2563eb" style="background-color: #2563eb;"></button>
+                      <button class="color-option" data-color="#059669" style="background-color: #059669;"></button>
+                      <button class="color-option" data-color="#7c3aed" style="background-color: #7c3aed;"></button>
+                      <button class="color-option" data-color="#dc2626" style="background-color: #dc2626;"></button>
+                      <button class="color-option" data-color="#ea580c" style="background-color: #ea580c;"></button>
                   </div>
               </div>
               
               <div class="setting-group">
                   <label>Personality Type:</label>
                   <select id="personality-select">
-                      <option value="abg">ABG (Asian Baby Girl)</option>
-                      <option value="cute">Cute &amp; Sweet</option>
-                      <option value="sassy">Sassy &amp; Bold</option>
+                      <option value="friendly">Friendly & Warm</option>
+                      <option value="cheerful">Cheerful & Bubbly</option>
+                      <option value="supportive">Supportive & Caring</option>
                   </select>
               </div>
               
@@ -174,7 +174,7 @@
       return false; 
     };
     window.startVerification = window.startVerification || function() {
-      return "Make me happy to prove you're human!";
+      return "Engage positively to verify you're human!";
     };
     window.processVerificationResponse = window.processVerificationResponse || function() {
       return { isValidating: false };
