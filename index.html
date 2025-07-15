@@ -3,190 +3,398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vivian AI Chatbot</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>The Empathy Test</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      .verification-notification {
-        background-color: var(--primary-color);
-        color: white;
-        padding: 10px 15px;
-        margin-bottom: 15px;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        max-width: 400px;
-        margin: 0 auto 15px auto;
-        position: relative;
-        z-index: 10;
-      }
-      
-      .verification-notification p {
-        margin: 0 0 8px 0;
-        font-weight: 500;
-      }
-      
-      .happiness-meter {
-        background-color: rgba(255,255,255,0.3);
-        height: 8px;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      
-      .happiness-progress {
-        background-color: white;
-        height: 100%;
-        width: 0%;
-        transition: width 0.3s ease;
-      }
+        /* Professional Design System */
+        :root {
+            --primary-color: #5a67d8; /* MODIFIED: Using the new friendly color */
+            --primary-hover: #434190;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --neutral-bg: #f8fafc;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
 
-      /* Add this to center everything in the page */
-      .page-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 20px;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--neutral-bg);
+            color: var(--gray-900);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Main Container */
+        .verification-container {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        /* Header */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: var(--white);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .app-header p {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Verification Status */
+        .verification-status {
+            background: var(--gray-50);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .status-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gray-300);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .status-icon.active {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--success-color) 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Emotion Indicator */
+        .emotion-indicator {
+            padding: 20px;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .emotion-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .emotion-avatar.positive {
+            background: #10b98120;
+            color: var(--success-color);
+        }
+
+        .emotion-avatar.neutral {
+            background: #64748b20;
+            color: var(--secondary-color);
+        }
+
+        .emotion-avatar.negative {
+            background: #ef444420;
+            color: var(--danger-color);
+        }
+
+        .emotion-details {
+            flex: 1;
+        }
+
+        .emotion-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .emotion-state {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-top: 2px;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: var(--gray-50);
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .message-content {
+            max-width: 75%;
+            background: var(--white);
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message.user .message-content {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .message-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            background: var(--white);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            background: var(--white);
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .send-btn {
+            padding: 0 20px;
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .send-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Settings Modal CSS (optional, if you keep settings) */
+
     </style>
 </head>
 <body>
-    <div class="page-container">
-      <div id="verification-notification" class="verification-notification">
-          <p><i class="fas fa-user-check"></i> Make Vivian happy to prove you're human!</p>
-          <div class="happiness-meter">
-            <div class="happiness-progress" id="happiness-progress" style="width: 0%"></div>
-          </div>
-      </div>
-      
-      <div class="chat-container">
-          <div class="chat-header">
-              <button id="settings-btn" class="settings-btn" title="Settings">
-                  <i class="fas fa-cog"></i>
-              </button>
-              <h2 id="chatbot-name">Vivian AI</h2>
-              <button id="clear-btn" class="clear-btn" title="Clear chat history">
-                  <i class="fas fa-trash-alt"></i>
-              </button>
-          </div>
-          
-          <div class="avatar-main-container">
-              <div class="avatar-wrapper">
-                  <img id="ai-avatar" src="assets/neutral.png" alt="ABG AI Avatar">
-                  <div class="avatar-status">
-                      <span id="mood-text">Feeling neutral</span>
-                  </div>
-              </div>
-          </div>
-          
-          <div class="chat-box" id="chat-box">
-              <!-- Messages will appear here -->
-          </div>
-          
-          <div class="chat-input">
-              <input type="text" id="user-input" placeholder="Type your message here...">
-              <button id="send-btn">
-                  <i class="fas fa-paper-plane"></i>
-              </button>
-          </div>
-      </div>
+    <div class="verification-container">
+        <header class="app-header">
+            <h1>The Empathy Test</h1>
+            <p>Can you cheer me up?</p>
+        </header>
 
-      <!-- Settings Panel -->
-      <div class="settings-panel" id="settings-panel">
-          <div class="settings-header">
-              <h3>Customize Vivian</h3>
-              <button id="close-settings" class="close-settings">
-                  <i class="fas fa-times"></i>
-              </button>
-          </div>
-          <div class="settings-content">
-              <div class="setting-group">
-                  <label for="chatbot-name-input">Chatbot Name:</label>
-                  <input type="text" id="chatbot-name-input" value="Vivian AI">
-              </div>
-              
-              <div class="setting-group">
-                  <label>Theme Color:</label>
-                  <div class="color-options">
-                      <button class="color-option" data-color="#ff6b9d" style="background-color: #ff6b9d;"></button>
-                      <button class="color-option" data-color="#6b96ff" style="background-color: #6b96ff;"></button>
-                      <button class="color-option" data-color="#6bff9d" style="background-color: #6bff9d;"></button>
-                      <button class="color-option" data-color="#ff9d6b" style="background-color: #ff9d6b;"></button>
-                      <button class="color-option" data-color="#d36bff" style="background-color: #d36bff;"></button>
-                  </div>
-              </div>
-              
-              <div class="setting-group">
-                  <label>Personality Type:</label>
-                  <select id="personality-select">
-                      <option value="abg">ABG (Asian Baby Girl)</option>
-                      <option value="cute">Cute &amp; Sweet</option>
-                      <option value="sassy">Sassy &amp; Bold</option>
-                  </select>
-              </div>
-              
-              <div class="setting-group toggle-group">
-                  <label for="show-timestamps">Show Message Timestamps:</label>
-                  <label class="toggle-switch">
-                      <input type="checkbox" id="show-timestamps">
-                      <span class="toggle-slider"></span>
-                  </label>
-              </div>
-              
-              <div class="setting-group toggle-group">
-                  <label for="dark-mode">Dark Mode:</label>
-                  <label class="toggle-switch">
-                      <input type="checkbox" id="dark-mode">
-                      <span class="toggle-slider"></span>
-                  </label>
-              </div>
-              
-              <div class="setting-group toggle-group">
-                  <label for="use-openai">Use OpenAI API:</label>
-                  <label class="toggle-switch">
-                      <input type="checkbox" id="use-openai" checked>
-                      <span class="toggle-slider"></span>
-                  </label>
-              </div>
-              
-              <div class="settings-footer">
-                  <button id="save-settings" class="btn save-btn">Save Changes</button>
-                  <button id="reset-settings" class="btn reset-btn">Reset to Default</button>
-              </div>
-          </div>
-      </div>
+        <div class="verification-status">
+            <div class="status-label">
+                <span class="status-icon" id="status-icon">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <span>Verification Progress</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0% Complete</div>
+        </div>
+
+        <div class="emotion-indicator">
+            <div class="emotion-avatar neutral" id="emotion-avatar">
+                <i class="fas fa-meh"></i>
+            </div>
+            <div class="emotion-details">
+                <div class="emotion-label">Current Emotion</div>
+                <div class="emotion-state" id="emotion-state">Neutral</div>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chat-area">
+            <div class="message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">
+                        Hey... it's been a long day. Think you can make me smile? To prove you're human, you'll need to cheer me up.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    class="message-input" 
+                    id="message-input"
+                    placeholder="Type your message here..."
+                    autocomplete="off"
+                >
+                <button class="send-btn" id="send-btn">
+                    Send
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
     </div>
-    
-    <!-- Settings Overlay -->
-    <div class="settings-overlay" id="settings-overlay"></div>
 
-    <!-- Define verification functions inline to avoid errors -->
-    <script>
-    // Basic verification stubs in case happiness-verification.js doesn't load properly
-    window.resetVerification = window.resetVerification || function() {
-      console.log("Verification reset");
-    };
-    window.isUserVerified = window.isUserVerified || function() { 
-      return true; 
-    };
-    window.isVerificationInProgress = window.isVerificationInProgress || function() { 
-      return false; 
-    };
-    window.startVerification = window.startVerification || function() {
-      return "Make me happy to prove you're human!";
-    };
-    window.processVerificationResponse = window.processVerificationResponse || function() {
-      return { isValidating: false };
-    };
-    window.startTypingTracking = window.startTypingTracking || function() {};
-    window.addTypingEvent = window.addTypingEvent || function() {};
-    window.notifyMoodChange = window.notifyMoodChange || function() { return true; };
-    </script>
-    
-    <!-- Load scripts in proper order -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Settings</h2>
+                <button class="modal-close" id="close-settings">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="setting-group">
+                    <label class="setting-label" for="language-select">
+                        Language
+                    </label>
+                    <select class="setting-select" id="language-select">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="happiness-verification.js"></script>
-    <script src="app.js"></script>
     <script src="openai-api.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

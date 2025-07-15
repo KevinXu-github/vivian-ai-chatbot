@@ -1,162 +1,68 @@
-# ABG AI Chatbot: Emotion-Based Human Verification
+# The Empathy Test: A Human Verification Challenge
 
-This project demonstrates a novel approach to human verification through emotional engagement rather than traditional CAPTCHAs. The ABG (Asian Baby Girl) AI Chatbot verifies users are human by requiring them to elicit positive emotional responses from the chatbot - essentially "making the chatbot happy" to prove they possess human empathy and communication skills.
+This project demonstrates a novel approach to human verification. Instead of traditional CAPTCHAs, it challenges a user to prove they are human by holding a positive, empathetic conversation with a conversational AI.
 
-![ABG AI Chatbot Screenshot](./screenshots/chatbot-screenshot.png)
+![Chatbot Screenshot](./screenshots/chatbot-screenshot.png)
 
-## The Verification System: Core Project Purpose
+## The Core Concept: Verification Through Conversation
 
-Unlike conventional verification systems that use puzzles or image recognition, this project explores a more natural interaction paradigm:
+This system moves beyond simple puzzle-solving and explores a more natural, engaging verification method. The goal is to "cheer up" an AI that starts the conversation feeling bored or down.
 
-1. **Happiness-Based Verification**: Users must make the chatbot happy by sending positive, engaging messages
-2. **Emotional Progress Tracking**: The system monitors when messages shift the chatbot's mood from neutral/sad to happy
-3. **Visual Feedback**: A progress bar shows how close the user is to verification
-4. **Anti-Bot Design**: The system requires genuine human-like interaction that's difficult for bots to simulate
+This approach is designed to:
+- **Feel Natural**: The test is framed as a simple conversation rather than an arbitrary task.
+- **Engage the User**: It encourages positive and thoughtful interaction from the very beginning.
+- **Provide a Unique Challenge**: It requires nuanced communication skills that are difficult for simple bots to simulate.
+- **Teach AI Interaction**: It subtly teaches users how to interact effectively with an emotionally responsive AI.
 
-This verification approach offers several advantages:
-- More engaging than traditional CAPTCHAs
-- Feels like a natural conversation rather than an arbitrary test
-- Encourages positive interaction from the start
-- Teaches users how to engage effectively with the AI
+The core verification logic is handled in `happiness-verification.js`, which tracks emotional state changes and awards points toward successful verification.
 
-The verification code in `happiness-verification.js` demonstrates techniques for:
-- Tracking emotional state changes
-- Implementing debounce mechanisms to prevent gaming the system
-- Providing visual feedback without disrupting the conversation flow
-- Creating verification systems that don't require server-side validation
+## How It Works
 
-## Features Supporting the Verification System
+The verification process is straightforward and transparent to the user.
 
-The chatbot includes several features that enhance the human verification experience:
+1.  **The Challenge**: The user is greeted by an AI assistant who is feeling down. The initial prompt makes the goal clear: cheer the AI up to prove you're human.
+2.  [cite_start]**Emotional Progress**: The system analyzes the user's messages for positive keywords and sentiment. 
+3.  **Earning Points**: A "happiness point" is awarded when a user's message causes a positive shift in the AI's mood (e.g., from `sad` to `happy`). This is tracked via a `happinessLevel` that must reach a `happinessThreshold`.
+4.  **Visual Feedback**: A progress bar in the UI shows the user how close they are to passing the test.
+5.  **Passing the Test**: Once the `happinessThreshold` is met, the user is successfully verified.
 
-- **Mood Detection**: Analyzes message sentiment using keyword analysis
-- **Dynamic Avatar**: Provides visual feedback on the chatbot's current emotional state
-- **Multiple Personalities**: Offers different verification experiences based on personality selection
-- **Conversation History**: Tracks verification progress between sessions
-- **Fallback Responses**: Ensures coherent interactions even without API connections
+## Features
+
+- [cite_start]**Dynamic Emotional State**: The AI's mood and avatar change in real-time based on the conversation's tone. 
+- **Real-time Verification Progress**: The UI provides instant feedback on the user's progress toward verification.
+- **Conversation-Based Challenge**: The core mechanic relies on natural language and empathy.
+- [cite_start]**Optional OpenAI Integration**: The app can be connected to a backend to provide more dynamic, generative responses via the OpenAI API. 
+- [cite_start]**Local Fallback System**: If API connections are unavailable, the chatbot seamlessly falls back to a set of pre-defined responses to ensure a consistent experience. 
 
 ## Project Structure
 
-```
-abg-ai-chatbot/
+empathy-test/
 ├── assets/                   # Avatar images for different emotional states
 ├── happiness-verification.js # Core verification system implementation
-├── app.js                    # Chatbot logic and mood detection
+├── app.js                    # Main chatbot logic and mood detection
 ├── index.html                # UI structure with verification components
-├── styles.css                # Styling including verification progress bar
 ├── openai-api.js             # Optional AI integration for enhanced responses
-├── server.js                 # Node.js server for API connections
-└── other support files...
-```
+└── server.js                 # Node.js server for handling API connections
+
 
 ## Setup Instructions
 
-### Quick Start (Verification-Only Mode)
+### Quick Start (Local Fallback Mode)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/abg-ai-chatbot.git
-   cd abg-ai-chatbot
-   ```
+1.  Clone the repository.
+2.  Create an `assets` folder and add avatar images: `happy.png`, `neutral.png`, and `sad.png`.
+3.  Open `index.html` in a modern web browser.
 
-2. Create an `assets` folder and add avatar images representing different moods:
-   - `happy.png` - Avatar with a happy expression
-   - `neutral.png` - Avatar with a neutral expression
-   - `sad.png` - Avatar with a sad expression
+### Full Setup (With AI-Enhanced Responses)
 
-3. Open `index.html` in a web browser to experience the verification system with template responses.
-
-### Full Setup (With Enhanced Responses)
-
-1. Install Node.js dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Create a `.env` file in the root directory:
-   ```
-   OPENAI_API_KEY=your_openai_api_key
-   HUGGINGFACE_API_KEY=your_huggingface_api_key
-   ```
-
-3. Start the server:
-   ```bash
-   npm start
-   ```
-
-4. Open `http://localhost:3000` in your browser to use the verification system with AI-enhanced responses.
-
-## How the Verification Works
-
-The verification system in `happiness-verification.js` implements:
-
-1. **Mood State Tracking**: 
-   ```javascript
-   verificationState = {
-     isVerified: false,
-     happinessLevel: 0,
-     happinessThreshold: 3,  // Points needed to verify
-     previousMood: null      // For tracking mood changes
-   }
-   ```
-
-2. **Happiness Point Awards**: Points are awarded when users successfully change the chatbot's mood to happy
-   ```javascript
-   if (mood === 'happy' && verificationState.previousMood !== 'happy') {
-     verificationState.happinessLevel += 1;
-     // Update progress indicator
-   }
-   ```
-
-3. **Debounce Protection**: Prevents rapid-fire point accumulation
-   ```javascript
-   // Prevent duplicate awards within a short time period
-   const now = Date.now();
-   if (now - verificationState.lastHappinessUpdate < 1000) {
-     return false;
-   }
-   ```
-
-4. **Visual Feedback**: Updates the progress bar based on verification status
-   ```javascript
-   const percentage = Math.min(100, (verificationState.happinessLevel / verificationState.happinessThreshold) * 100);
-   progressBar.style.width = `${percentage}%`;
-   ```
-
-## Chatbot Personalities
-
-The verification experience changes based on the selected personality:
-
-### ABG (Asian Baby Girl)
-- **How to Make Happy**: Use trendy slang, positive emojis, compliments
-- **Happy Response**: "Omg yesss! I love that! You're literally serving today!"
-
-### Cute & Sweet
-- **How to Make Happy**: Use gentle, kind messages with cute expressions
-- **Happy Response**: "Yay! That makes me super duper happy! ♡(ᐢ ᴥ ᐢ)"
-
-### Sassy & Bold
-- **How to Make Happy**: Use confident, witty comments with a touch of flattery
-- **Happy Response**: "Well, look who just brightened my digital day! I'm impressed."
+1.  Install Node.js dependencies: `npm install`
+2.  Create a `.env` file in the root directory and add your `OPENAI_API_KEY`.
+3.  Start the server: `npm start`
+4.  Open `http://localhost:3000` in your browser.
 
 ## Customization
 
-The verification system can be customized:
-
-- **Difficulty Level**: Adjust `happinessThreshold` in `happiness-verification.js`
-- **Mood Detection**: Modify the keywords in `moodKeywords` object in `app.js`
-- **Verification Messages**: Change feedback texts in `processVerificationResponse()`
-- **Progress Indicator**: Style the progress bar in CSS for different visual feedback
-
-## Extensions and Research Applications
-
-This project serves as a foundation for exploring:
-
-- Human-AI emotional interaction patterns
-- Alternative CAPTCHA and verification mechanisms
-- Emotional intelligence in conversational interfaces
-- User engagement through gamified verification
-
-## License
-
-This project is available as open source under the terms of the MIT License.
+The verification system can be easily customized:
+- **Difficulty Level**: Adjust the `happinessThreshold` value in `happiness-verification.js` to require more positive interactions.
+- **Mood Keywords**: Modify the `moodKeywords` object in `app.js` to change how the AI detects emotions.
+- **Dialogue**: Change the chatbot's responses in the `personalityResponses` object in `app.js`.
