@@ -21,28 +21,29 @@ The core verification logic is handled in `happiness-verification.js`, which tra
 The verification process is straightforward and transparent to the user.
 
 1.  **The Challenge**: The user is greeted by an AI assistant who is feeling down. The initial prompt makes the goal clear: cheer the AI up to prove you're human.
-2.  [cite_start]**Emotional Progress**: The system analyzes the user's messages for positive keywords and sentiment. 
+2.  **Emotional Progress**: The system analyzes the user's messages for positive keywords and sentiment.
 3.  **Earning Points**: A "happiness point" is awarded when a user's message causes a positive shift in the AI's mood (e.g., from `sad` to `happy`). This is tracked via a `happinessLevel` that must reach a `happinessThreshold`.
 4.  **Visual Feedback**: A progress bar in the UI shows the user how close they are to passing the test.
 5.  **Passing the Test**: Once the `happinessThreshold` is met, the user is successfully verified.
 
 ## Features
 
-- [cite_start]**Dynamic Emotional State**: The AI's mood and avatar change in real-time based on the conversation's tone. 
+- **Dynamic Emotional State**: The AI's mood and avatar change in real-time based on the conversation's tone.
 - **Real-time Verification Progress**: The UI provides instant feedback on the user's progress toward verification.
 - **Conversation-Based Challenge**: The core mechanic relies on natural language and empathy.
-- [cite_start]**Optional OpenAI Integration**: The app can be connected to a backend to provide more dynamic, generative responses via the OpenAI API. 
-- [cite_start]**Local Fallback System**: If API connections are unavailable, the chatbot seamlessly falls back to a set of pre-defined responses to ensure a consistent experience. 
+- **Optional OpenAI Integration**: The app can be connected to a backend to provide more dynamic, generative responses via the OpenAI API.
+- **Local Fallback System**: If API connections are unavailable, the chatbot seamlessly falls back to a set of pre-defined responses to ensure a consistent experience.
 
 ## Project Structure
 
-empathy-test/
-├── assets/                   # Avatar images for different emotional states
-├── happiness-verification.js # Core verification system implementation
-├── app.js                    # Main chatbot logic and mood detection
-├── index.html                # UI structure with verification components
-├── openai-api.js             # Optional AI integration for enhanced responses
-└── server.js                 # Node.js server for handling API connections
+This is the file structure for the project:
+- `empathy-test/`
+  - `assets/`: Contains avatar images for different emotional states.
+  - `happiness-verification.js`: Core verification system implementation.
+  - `app.js`: Main chatbot logic and mood detection.
+  - `index.html`: UI structure with verification components.
+  - `openai-api.js`: Optional AI integration for enhanced responses.
+  - `server.js`: Node.js server for handling API connections.
 
 
 ## Setup Instructions
