@@ -22,8 +22,7 @@
 
 /* Dark Mode Variables - Complete dark theme */
 .dark-mode {
-    --primary-color: #3b82f6;
-    --primary-hover: #2563eb;
+    --primary-hover: var(--primary-color);
     --primary-light: #1e3a8a;
     --primary-lighter: #172554;
     --background-color: #0f172a;
